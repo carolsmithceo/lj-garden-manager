@@ -3437,7 +3437,7 @@ function renderMapTabs() {
         <svg id="active-map-svg" viewBox="0 0 320 560" width="320" height="560"
           style="display:block;background:#f2faf2;border-radius:8px;width:100%;max-width:380px;height:auto;touch-action:none;user-select:none"></svg>
         <div class="compass bottom">▼ SOUTH ENTRANCE</div>
-        <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;font-style:italic">Drag zones to reposition · tap to select</div>
+        <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;font-style:italic">Drag to reposition · tap to select · double-tap to edit</div>
         <div class="map-legend">
           <div class="legend-item"><div class="legend-dot" style="background:#5a9e5f"></div>Left wall</div>
           <div class="legend-item"><div class="legend-dot" style="background:#66bb6a"></div>Right wall</div>
@@ -3454,7 +3454,11 @@ function renderMapTabs() {
   const svgEl = document.getElementById('active-map-svg');
   if (svgEl) {
     svgEl.addEventListener('wheel', e => e.preventDefault(), {passive:false});
-    svgEl.addEventListener('dblclick', e => e.preventDefault());
+    svgEl.addEventListener('dblclick', e => {
+      e.preventDefault();
+      const zg = e.target.closest('[data-zoneid]');
+      if (zg) openModal(parseInt(zg.dataset.zoneid));
+    });
     svgEl.onclick = e => e.stopPropagation();
   }
 }
@@ -3699,7 +3703,7 @@ function renderActiveSvg(zoneList, mapId) {
     const colPair  = erz ? {base:'#c0392b',light:'#f5b7b1'} : (sideColors[side]||sideColors.left);
     const fill     = isSel ? colPair.base : colPair.light;
 
-    const g = el('g',{cursor:'grab'});
+    const g = el('g',{cursor:'grab','data-zoneid':String(z.id)});
     const rect = el('rect',{x,y,width:bw,height:bh,rx:4,fill,stroke:colPair.base,
       'stroke-width':isSel?2.5:1.5,
       'stroke-dasharray': z._autoPlaced?'4 2':'none',
@@ -3921,8 +3925,6 @@ function renderActiveSvg(zoneList, mapId) {
         renderActiveSvg(autoPosition(mapZ).filter(zn=>mapFilter==='ALL'||groupLetters(zn.group).includes(mapFilter)), mapId);
       }
     });
-    // Double-click — open Edit Zone modal directly
-    g.addEventListener('dblclick', e => { e.stopPropagation(); openModal(z.id); });
   });
 }
 
