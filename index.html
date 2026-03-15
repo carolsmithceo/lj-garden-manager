@@ -1,0 +1,3817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<!-- CSP removed: was blocking Firebase fetch on Safari file:// -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Love Joy Farms">
+<meta name="theme-color" content="#1e4025">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Love Joy Farms Manager</title>
+<link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22LoveJoy%20Farms%20CEO%20Manager%22%2C%22short_name%22%3A%22LoveJoy%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231e4025%22%2C%22theme_color%22%3A%22%232e7d32%22%2C%22orientation%22%3A%22any%22%7D">
+<!-- Leaflet map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;600;700&display=swap');
+
+:root {
+  --cream:        #ffffff;
+  --parchment:    #f4fbf5;
+  --blush:        #c8e6c9;
+  --rose:         #5a9e5f;
+  --deep-rose:    #2e7d32;
+  --sage:         #81c784;
+  --deep-sage:    #388e3c;
+  --lavender:     #e8f5e9;
+  --warm-tan:     #66bb6a;
+  --ink:          #1b2e1c;
+  --muted:        #4a6e4c;
+  --light-border: rgba(102,187,106,0.22);
+  --card-shadow:  0 2px 16px rgba(46,125,50,0.08);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{
+  height: 100%;
+  height: -webkit-fill-available;
+}
+body{
+  font-family:'Nunito',Georgia,sans-serif;
+  background: #ffffff;
+  background-image:
+    radial-gradient(ellipse at 10% 0%,   rgba(180,220,182,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 100%, rgba(140,200,145,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%,  rgba(220,240,222,0.08) 0%, transparent 60%);
+  color: var(--ink);
+  /* Fill exactly the visible viewport on iOS Safari */
+  height: 100vh;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-size:14px;
+  line-height:1.6;
+  font-weight:400;
+  /* Prevent rubber-band scroll exposing white gaps */
+  overscroll-behavior: none;
+  /* Crisp text on Retina */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Header ── */
+.app-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 28px;
+  /* Top safe area: keeps content below notch / Dynamic Island in standalone mode */
+  padding-top: max(18px, calc(env(safe-area-inset-top, 0px) + 10px));
+  background: linear-gradient(135deg, #f8fef8 0%, #ffffff 70%, #f0faf0 100%);
+  border-bottom:1px solid rgba(74,140,79,0.18);
+  flex-wrap:wrap;gap:10px;
+  position:relative;
+  flex-shrink: 0;
+}
+.app-title{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:20px;font-weight:600;
+  color: var(--ink);letter-spacing:1px;
+}
+.app-title span{color: var(--rose);}
+.header-btns{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── Tabs ── */
+.tab-nav{
+  display:flex;
+  border-bottom:1.5px solid var(--light-border);
+  background: linear-gradient(180deg, #f6fcf6 0%, #ffffff 100%);
+  overflow-x:auto;
+  padding:0 20px;
+  gap:2px;
+  flex-shrink: 0;
+}
+.tab-btn{
+  padding:12px 22px;
+  font-family:'Nunito',sans-serif;
+  font-size:11px;letter-spacing:1.5px;
+  font-weight:700;text-transform:uppercase;
+  background:transparent;border:none;
+  color: #4a6e4c;
+  cursor:pointer;
+  border-bottom:2.5px solid transparent;
+  white-space:nowrap;
+  transition:all .2s;
+  margin-bottom:-1.5px;
+}
+.tab-btn.active{color: #2e7d32;border-bottom-color: #5a9e5f;}
+.tab-btn:hover:not(.active){color: var(--rose);}
+
+/* App shell — fills remaining vertical space after header + tab-nav */
+#app-content{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0; /* needed for flex children to scroll correctly */
+}
+.tab-panel{display:none;padding:24px 28px;overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.tab-panel.active{display:block;flex:1;min-height:0;}
+
+/* ── Buttons ── */
+.btn{
+  font-family:'Nunito',sans-serif;
+  font-size:11px;letter-spacing:1px;font-weight:700;
+  cursor:pointer;border-radius:20px;
+  padding:7px 18px;
+  transition:all .2s;border:1.5px solid;
+}
+.btn-primary{
+  background: linear-gradient(135deg, #66bb6a, #388e3c);
+  border-color: var(--deep-rose);color:#fff;
+  box-shadow:0 2px 10px rgba(56,142,60,0.25);
+}
+.btn-primary:hover{filter:brightness(1.06);box-shadow:0 3px 14px rgba(56,142,60,0.35);}
+.btn-ghost{
+  background: rgba(255,255,255,0.7);
+  border-color: #c8e6c9;
+  color: #2e7d32;
+}
+.btn-ghost:hover{background:#f4fbf5;border-color:#5a9e5f;color:#2e7d32;}
+.btn-danger{
+  background:transparent;
+  border-color:rgba(180,80,80,0.35);
+  color:#b05050;
+}
+.btn-danger:hover{background:rgba(180,80,80,0.08);}
+.btn-sm{padding:4px 12px;font-size:10px;}
+
+/* ── Controls ── */
+.controls{display:flex;gap:12px;margin-bottom:18px;align-items:center;flex-wrap:wrap;}
+.season-group{display:flex;gap:0;align-items:center;}
+.season-label{
+  font-size:10px;color:var(--muted);letter-spacing:2px;
+  font-family:'Nunito',sans-serif;text-transform:uppercase;
+  margin-right:10px;
+}
+.seg-btn{
+  font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;
+  padding:5px 14px;letter-spacing:1px;
+  border:1.5px solid var(--blush);
+  background:rgba(255,255,255,0.6);
+  color:var(--muted);cursor:pointer;
+  transition:all .15s;
+}
+.seg-btn:first-of-type{border-radius:14px 0 0 14px;}
+.seg-btn:last-of-type{border-radius:0 14px 14px 0;}
+.seg-btn.active{
+  background: linear-gradient(135deg,#a5d6a7,#66bb6a);
+  border-color:#81c784;color:#1b4e1d;
+}
+.seg-btn:hover:not(.active){background:#fff;color:var(--rose);}
+
+/* ── Stats ── */
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.stat{
+  background:#fff;
+  border:1.5px solid var(--light-border);
+  border-radius:12px;
+  padding:10px 18px;min-width:90px;text-align:center;
+  box-shadow: var(--card-shadow);
+}
+.stat-val{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:22px;font-weight:700;
+  color:#2e7d32;line-height:1;
+}
+.stat-label{font-size:8px;color:var(--muted);letter-spacing:1.5px;margin-top:3px;text-transform:uppercase;}
+
+/* ── Table ── */
+.tbl-wrap{position:relative;
+  overflow-x:auto;
+  border-radius:12px;
+  border:1.5px solid var(--light-border);
+  box-shadow:var(--card-shadow);
+}
+table{width:100%;border-collapse:collapse;min-width:900px;}
+thead th{
+  background: linear-gradient(180deg, #f1faf2 0%, #e8f5e9 100%);
+  color:#2e7d32;
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  padding:10px 12px;text-align:left;
+  border-bottom:1.5px solid var(--light-border);
+  font-family:'Nunito',sans-serif;font-weight:800;
+  white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid rgba(180,140,110,0.12);transition:background .12s;}
+tbody tr:hover{background:rgba(102,187,106,0.07);}
+tbody tr.gh-row{background:rgba(165,214,167,0.12);}
+tbody tr.gh-row:hover{background:rgba(165,214,167,0.2);}
+tbody tr.dimmed{opacity:.28;}
+tbody tr.has-error td{border-left:3px solid #c0392b;}
+td{padding:8px 12px;vertical-align:middle;color:var(--ink);font-size:11px;}
+td.num{color:var(--warm-tan);font-size:10px;width:32px;}
+td.err-overlap{color:#c0394a;font-weight:700;}
+td.err-endtime{color:#b07020;font-weight:700;}
+td.err-dupname{color:#c0394a;font-weight:700;}
+.err-icon{color:#c0394a;font-size:10px;margin-left:3px;}
+.warn-icon{color:#b07020;font-size:10px;margin-left:3px;}
+
+/* ── Badges ── */
+.badge{
+  display:inline-block;font-size:8px;padding:2px 8px;
+  border-radius:10px;font-weight:700;vertical-align:middle;
+  letter-spacing:.5px;font-family:'Nunito',sans-serif;
+}
+.badge-a{background:#ffcdd2;color:#b71c1c;}
+.badge-b{background:#ffe0b2;color:#e65100;}
+.badge-c{background:#fff9c4;color:#f57f17;}
+.badge-d{background:#c8e6c9;color:#1b5e20;}
+.badge-e{background:#bbdefb;color:#0d47a1;}
+.badge-f{background:#e1bee7;color:#4a148c;}
+.badge-all{background:var(--ink);color:#fff;}
+.badge-err{background:#f5d5d8;color:#9e2030;}
+.badge-warn{background:#f5e8cc;color:#8e6010;}
+
+/* ── Validation banner ── */
+.val-banner{
+  display:none;
+  background:rgba(255,235,235,0.8);
+  border:1.5px solid #e57373;
+  border-radius:8px;padding:10px 16px;
+  font-size:11px;color:#c0392b;
+  margin-bottom:16px;
+}
+.val-banner.visible{display:block;}
+
+/* ── Modal ── */
+.modal-overlay{
+  display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(58,42,30,0.45);
+  backdrop-filter:blur(3px);
+  z-index:100;align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px));}
+.modal{
+  background: linear-gradient(160deg,#f8fef8 0%,#f0f9f0 100%);
+  border:1.5px solid rgba(74,140,79,0.22);
+  border-radius:20px;
+  padding:28px 32px;
+  width:540px;max-width:95vw;
+  max-height:90vh;overflow-y:auto;
+  box-shadow:0 12px 48px rgba(30,80,35,0.14);
+}
+.modal-title{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:18px;font-weight:600;
+  color:var(--ink);margin-bottom:20px;
+}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+.form-group label{
+  font-size:9px;color:#388e3c;
+  letter-spacing:2px;text-transform:uppercase;
+  font-family:'Nunito',sans-serif;font-weight:800;
+}
+.form-group input,
+.form-group select,
+.form-group textarea{
+  background:rgba(255,255,255,0.85);
+  border:1.5px solid var(--light-border);
+  color:var(--ink);
+  font-family:'Nunito',sans-serif;font-size:12px;
+  padding:8px 12px;border-radius:10px;outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus{
+  border-color:var(--blush);
+  box-shadow:0 0 0 3px rgba(232,180,188,0.2);
+}
+.form-group textarea{resize:vertical;min-height:64px;}
+.form-group select option{background:#fdf6ec;}
+.form-hint{font-size:9px;color:var(--warm-tan);margin-top:2px;}
+.modal-err{
+  font-size:10px;color:#c0394a;
+  margin-top:10px;display:none;
+  background:rgba(192,57,74,0.08);
+  border-radius:6px;padding:7px 12px;
+}
+.modal-footer{
+  display:flex;gap:8px;justify-content:flex-end;
+  margin-top:22px;padding-top:18px;
+  border-top:1px solid rgba(74,140,79,0.15);
+}
+
+/* ── Map ── */
+.map-layout{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;}
+.map-wrap{max-width:420px;
+  background:#f8fef8;
+  border:1.5px solid var(--light-border);
+  border-radius:16px;padding:16px;
+  box-shadow:var(--card-shadow);
+}
+.compass{
+  font-size:8px;color:var(--sage);text-align:center;
+  letter-spacing:4px;text-transform:uppercase;
+  font-family:'Nunito',sans-serif;font-weight:800;
+}
+.compass.top{margin-bottom:10px;}
+.compass.bottom{margin-top:10px;}
+.map-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;justify-content:center;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--muted);}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+.map-panel{width:270px;flex-shrink:0;}
+.map-panel-empty{
+  background:#fff;
+  border:1.5px dashed var(--blush);
+  border-radius:14px;padding:22px;text-align:center;
+  box-shadow:var(--card-shadow);
+}
+.map-panel-empty p{font-size:10px;color:var(--warm-tan);margin-top:6px;line-height:1.6;}
+.map-detail{
+  background:#fff;border-radius:14px;padding:18px;
+  border:1.5px solid var(--light-border);
+  box-shadow:var(--card-shadow);
+  animation:fadeUp .18s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.detail-kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(180,140,110,0.1);font-size:11px;}
+.detail-kv .k{color:var(--warm-tan);}
+.detail-kv .v{color:var(--ink);font-weight:700;}
+.map-zone-list{margin-top:16px;text-align:left;}
+.map-zone-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 10px;border-radius:8px;cursor:pointer;
+  transition:background .1s;font-size:10px;color:var(--ink);
+}
+.map-zone-item:hover{background:rgba(232,180,188,0.12);}
+.map-zone-item .zt{font-size:9px;color:var(--warm-tan);}
+
+/* ── Water tab ── */
+.gpm-row{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+.gpm-row label{
+  font-size:10px;color:var(--sage);
+  letter-spacing:2px;text-transform:uppercase;
+  font-family:'Nunito',sans-serif;font-weight:800;
+}
+.gpm-row input{
+  background:#fff;border:1.5px solid var(--light-border);
+  color:#2e7d32;font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:18px;font-weight:600;
+  padding:6px 12px;border-radius:10px;width:80px;outline:none;
+  box-shadow:var(--card-shadow);
+}
+.gpm-note{font-size:10px;color:var(--warm-tan);}
+
+/* ── Print tab ── */
+.section-title{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:16px;color:#2e7d32;margin-bottom:16px;
+  font-style:italic;
+}
+.print-options{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;}
+.print-card{
+  background:#f8fef8;
+  border:1.5px solid var(--light-border);
+  border-radius:14px;padding:22px 26px;width:230px;
+  box-shadow:var(--card-shadow);
+}
+.print-card h3{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:14px;color:#2e7d32;
+  margin-bottom:8px;font-weight:600;
+}
+.print-card p{font-size:10px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+
+/* ── Help tab ── */
+.help-section{margin-bottom:22px;}
+.help-section h3{
+  font-size:9px;color:var(--sage);
+  letter-spacing:3px;text-transform:uppercase;
+  font-family:'Nunito',sans-serif;font-weight:800;
+  padding:8px 14px;
+  background:rgba(165,214,167,0.15);
+  border-radius:8px;margin-bottom:10px;
+  border-left:3px solid #81c784;
+}
+.help-row{display:flex;gap:14px;padding:8px 12px;border-bottom:1px solid rgba(180,140,110,0.1);font-size:11px;}
+.help-key{color:#2e7d32;width:190px;flex-shrink:0;font-weight:700;}
+.help-val{color:var(--ink);line-height:1.5;}
+
+/* ── Misc ── */
+input[type=file]{display:none;}
+.empty-row td{text-align:center;color:var(--warm-tan);padding:24px;font-style:italic;}
+.val-error{border-color:var(--rose) !important;background:rgba(232,180,188,0.08) !important;}
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE — PC & iPad
+   Breakpoints: >1200 PC, 768-1200 iPad landscape/portrait, <768 phone
+════════════════════════════════════════════════════════ */
+
+/* ── PC (large): expand layout, wider panels ── */
+@media (min-width: 1200px) {
+  .tab-panel        { padding: 24px 36px; }
+  .app-header       { padding: 16px 36px; }
+  .app-title        { font-size: 22px; }
+  .map-panel        { width: 340px; }
+  .modal            { width: 620px; }
+  .stats            { gap: 14px; }
+  .stat             { min-width: 110px; padding: 12px 22px; }
+  .stat-val         { font-size: 26px; }
+  .print-card       { width: 260px; }
+  /* Table less cramped on wide screens */
+  td                { padding: 9px 14px; font-size: 12px; }
+  thead th          { padding: 11px 14px; font-size: 10px; }
+  /* Map SVG scales up */
+  #active-map-svg   { width: 380px !important; height: 640px !important; }
+}
+
+/* ── iPad landscape + tablet (768–1199) ── */
+@media (max-width: 1199px) and (min-width: 768px) {
+  .tab-btn          { padding: 10px 16px; font-size: 11px; }
+  .tab-panel        { padding: 18px 20px; }
+  .app-header       { padding: 14px 20px; }
+  .modal            { width: 94vw; max-width: 560px; }
+  .map-panel        { width: 240px; }
+  .print-card       { width: 200px; }
+  table             { min-width: 800px; }
+}
+
+/* ── iPad portrait + small tablet (600–767) ── */
+@media (max-width: 767px) and (min-width: 600px) {
+  .tab-btn          { padding: 9px 12px; font-size: 10px; letter-spacing: 1px; }
+  .tab-panel        { padding: 14px; }
+  .app-header       { padding: 12px 14px; }
+  .app-title        { font-size: 15px; }
+  .modal            { width: 96vw; padding: 18px; }
+  .modal-grid       { grid-template-columns: 1fr; }
+  .form-group.full  { grid-column: 1; }
+  .map-layout       { flex-direction: column; }
+  .map-panel        { width: 100%; }
+  .map-wrap         { width: 100%; }
+  #active-map-svg   { width: 100% !important; max-width: 360px; }
+  .print-options    { flex-direction: column; }
+  .print-card       { width: 100%; max-width: 360px; }
+  .stats            { gap: 8px; }
+  .stat             { min-width: 80px; padding: 8px 12px; }
+  .stat-val         { font-size: 18px; }
+  table             { min-width: 680px; }
+}
+
+/* ── Phone (<600) ── */
+@media (max-width: 599px) {
+  body              { font-size: 12px; }
+  .tab-nav          { padding: 0 8px; }
+  .tab-btn          { padding: 8px 10px; font-size: 9px; letter-spacing: 0.5px; }
+  .tab-panel        { padding: 12px; }
+  .app-header       { padding: 8px 12px; padding-top: max(8px, calc(env(safe-area-inset-top, 0px) + 6px)); flex-direction: row; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .app-title        { font-size: 14px; }
+  .modal            { width: 98vw; padding: 14px; }
+  .modal-grid       { grid-template-columns: 1fr; }
+  .form-group.full  { grid-column: 1; }
+  .map-layout       { flex-direction: column; }
+  .map-panel        { width: 100%; }
+  #active-map-svg   { width: 100% !important; max-width: 320px; }
+  table             { min-width: 560px; font-size: 10px; }
+  td                { padding: 6px 8px; font-size: 10px; }
+  .stats            { gap: 6px; }
+  .stat             { min-width: 70px; padding: 7px 10px; }
+  .stat-val         { font-size: 16px; }
+  .stat-label       { font-size: 7px; }
+  .controls         { gap: 6px; }
+  .seg-btn          { padding: 5px 10px; font-size: 9px; }
+  .print-options    { flex-direction: column; }
+  .print-card       { width: 100%; }
+  .header-btns      { flex-wrap: wrap; gap: 5px; }
+  .btn              { padding: 6px 12px; font-size: 10px; }
+}
+
+/* ── Tiny phones (≤414px) — buttons shrink to fit ── */
+@media (max-width: 414px) {
+  .btn              { font-size: 9px; padding: 5px 10px; letter-spacing: 0.5px; }
+  .header-btns      { gap: 4px; }
+  .app-title        { font-size: 13px; }
+}
+
+/* ── Extra-small (≤374px, iPhone SE etc) ── */
+@media (max-width: 374px) {
+  .btn              { font-size: 8px; padding: 4px 8px; letter-spacing: 0; border-radius: 14px; }
+  .app-title        { font-size: 12px; }
+  .tab-btn          { padding: 7px 8px; font-size: 8px; }
+  .header-btns      { gap: 3px; }
+  #db-status        { font-size: 9px; padding: 3px 7px; }
+}
+
+/* ── Touch devices (iPad + phone): larger tap targets ── */
+@media (hover: none) and (pointer: coarse) {
+  .btn              { min-height: 42px; }
+  .seg-btn          { min-height: 36px; padding: 8px 16px; }
+  .tab-btn          { min-height: 44px; }
+  .btn-sm           { min-height: 34px; padding: 7px 14px; }
+  tbody tr          { min-height: 44px; }
+  td                { padding: 10px 12px; }
+  .map-zone-item    { min-height: 40px; padding: 8px 10px; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea { font-size: 16px !important; min-height: 44px; }
+  select            { min-height: 44px; }
+  /* Double-tap prevention */
+  .btn, .seg-btn, .tab-btn, td { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+}
+
+/* ── Safe areas (notch / home bar) ── */
+body {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left:   env(safe-area-inset-left,   0px);
+  padding-right:  env(safe-area-inset-right,  0px);
+}
+.tab-nav {
+  padding-left:  max(20px, env(safe-area-inset-left));
+  padding-right: max(0px,  env(safe-area-inset-right));
+}
+
+/* ── iPhone landscape: ultra-compact header, more content space ── */
+@media (max-height: 430px) and (orientation: landscape) {
+  .app-header { padding: 4px 16px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); gap: 4px; }
+  .app-header::before { display: none; }
+  .app-title  { font-size: 12px; }
+  .tab-btn    { padding: 6px 10px; font-size: 8px; }
+  .tab-nav    { padding: 0 4px; padding-left: max(4px, env(safe-area-inset-left)); }
+  .tab-panel  { padding: 8px 10px; }
+  .stats      { margin-bottom: 10px; gap: 6px; }
+  .controls   { margin-bottom: 10px; }
+}
+
+/* ── Smooth iOS scrolling + contained overscroll ── */
+.tab-panel, .tbl-wrap { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+
+/* ── Prevent text resize on rotation ── */
+body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* ── Active/pressed states for touch feedback (iOS has no hover) ── */
+.btn:active          { opacity: 0.75; transform: scale(0.97); }
+.tab-btn:active      { opacity: 0.7; }
+.seg-btn:active      { opacity: 0.75; }
+.map-zone-item:active{ background: rgba(74,140,79,0.14); }
+
+/* ── PC hover states (no touch) ── */
+@media (hover: hover) and (pointer: fine) {
+  tbody tr:hover    { background: rgba(74,140,79,0.06); cursor: pointer; }
+  .btn:hover        { transform: translateY(-1px); }
+  .btn-primary:hover{ box-shadow: 0 4px 14px rgba(45,107,50,0.32); }
+  .tab-btn:hover:not(.active) { background: rgba(102,187,106,0.08); color: #2e7d32; }
+  .map-zone-item:hover { background: rgba(74,140,79,0.08); }
+}
+
+/* ── Offline / install UI ── */
+#offline-banner {
+  display:none; position:fixed; top:0; left:0; right:0; z-index:999;
+  background:#b8d8ba; color:#1a4e1e;
+  text-align:center; font-size:12px; font-weight:700;
+  padding:8px; letter-spacing:1px;
+}
+#offline-banner.visible { display:block; }
+#install-prompt {
+  display:none; position:fixed; bottom:20px; right:20px;
+  background:#fff; border:1.5px solid var(--blush);
+  border-radius:16px; padding:16px 20px; z-index:200;
+  box-shadow: 0 8px 32px rgba(80,40,20,0.15); max-width:280px;
+  animation:fadeUp .25s ease;
+}
+#install-prompt.visible  { display:block; }
+#install-prompt h4 {
+  font-family:'Cormorant Garamond',Georgia,serif; font-size:14px;
+  color:#2e7d32; margin-bottom:6px;
+}
+#install-prompt p  { font-size:11px; color:var(--muted); line-height:1.5; margin-bottom:12px; }
+#install-prompt .steps { font-size:10px; color:var(--ink); line-height:1.8; }
+#install-prompt .steps span { color:var(--rose); font-weight:700; }
+
+/* ── Satellite tile sharpening ── */
+#propmap-map .leaflet-tile {
+  image-rendering: auto;
+  filter: contrast(1.1) saturate(1.12) brightness(1.02);
+}
+
+/* ── Property Map Tab ── */
+#tab-propmap {
+  padding: 0 !important;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+#tab-propmap.active { display: flex; flex: 1; min-height: 0; }
+
+.propmap-wrap {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+}
+
+#propmap-sidebar {
+  width: 280px;
+  min-width: 220px;
+  max-width: 320px;
+  background: #f8fdf8;
+  border-right: 1.5px solid rgba(102,187,106,0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#propmap-sidebar-header {
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid rgba(102,187,106,0.18);
+  background: linear-gradient(135deg,#f0faf0,#fff);
+}
+#propmap-sidebar-header h3 {
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size: 15px; font-weight: 600; color: #1e4025; margin-bottom: 4px;
+}
+.propmap-layer-btns {
+  display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px;
+}
+.propmap-layer-btn {
+  font-family:'Nunito',sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 6px; border: 1.5px solid rgba(102,187,106,0.4);
+  background: #fff; color: #4a6e4c; cursor: pointer; transition: all .15s;
+}
+.propmap-layer-btn.active {
+  background: #2e7d32; color: #fff; border-color: #2e7d32;
+}
+#propmap-zone-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+.propmap-group-label {
+  font-family:'Nunito',sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  color: #81c784; padding: 10px 14px 4px;
+}
+.propmap-zone-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 14px; cursor: pointer; transition: background .12s;
+  border-left: 3px solid transparent;
+}
+.propmap-zone-item:hover { background: rgba(102,187,106,0.08); }
+.propmap-zone-item.selected {
+  background: rgba(46,125,50,0.10);
+  border-left-color: #2e7d32;
+}
+.propmap-zone-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.propmap-zone-name {
+  font-size: 12px; color: #1b2e1c; font-weight: 600; flex: 1;
+}
+.propmap-zone-status {
+  font-size: 10px; color: #81c784;
+}
+
+#propmap-detail {
+  padding: 14px;
+  border-top: 1px solid rgba(102,187,106,0.18);
+  background: #fff;
+  font-size: 12px;
+}
+#propmap-detail.hidden { display: none; }
+#propmap-detail h4 {
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size: 15px; font-weight: 600; color: #1e4025; margin-bottom: 8px;
+}
+.propmap-detail-row {
+  display: flex; justify-content: space-between;
+  padding: 3px 0; border-bottom: 1px dotted rgba(102,187,106,0.18);
+  color: #4a6e4c;
+}
+.propmap-detail-row strong { color: #1b2e1c; }
+.propmap-detail-btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.propmap-detail-btn {
+  font-family:'Nunito',sans-serif; font-size: 11px; font-weight: 700;
+  padding: 5px 12px; border-radius: 7px; border: none; cursor: pointer; transition: all .15s;
+}
+.propmap-detail-btn.primary { background: #2e7d32; color: #fff; }
+.propmap-detail-btn.ghost {
+  background: rgba(255,255,255,0.7); border: 1.5px solid rgba(102,187,106,0.4); color: #4a6e4c;
+}
+.propmap-detail-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+#propmap-map {
+  flex: 1;
+  position: relative;
+  z-index: 0;
+}
+
+.propmap-toolbar {
+  position: absolute;
+  top: 10px; right: 10px;
+  z-index: 1000;
+  display: flex; flex-direction: column; gap: 5px;
+}
+
+.propmap-info-box {
+  position: absolute;
+  bottom: 24px; left: 10px;
+  z-index: 1000;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(102,187,106,0.3);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 10px;
+  color: #4a6e4c;
+  pointer-events: none;
+  max-width: 220px;
+}
+
+/* Draw mode indicator */
+#propmap-draw-banner {
+  position: absolute;
+  top: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 1001;
+  background: #2e7d32; color: #fff;
+  border-radius: 20px;
+  padding: 6px 18px;
+  font-size: 12px; font-weight: 700;
+  display: none;
+  pointer-events: none;
+}
+#propmap-draw-banner.visible { display: block; }
+
+/* Leaflet zone tooltip */
+.geo-zone-tooltip {
+  background: rgba(30,64,37,0.9);
+  border: 1px solid #4caf50;
+  border-radius: 5px;
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+.geo-zone-tooltip::before { display: none; }
+
+/* Mobile: sidebar collapses to bottom sheet */
+@media (max-width: 640px) {
+  .propmap-wrap { flex-direction: column; }
+  #propmap-sidebar {
+    width: 100%; max-width: 100%;
+    height: 220px; min-width: unset;
+    border-right: none;
+    border-top: 1.5px solid rgba(102,187,106,0.22);
+    order: 2;
+  }
+  #propmap-map { order: 1; flex: 1; min-height: 260px; }
+}
+
+</style>
+<!-- Firebase SDK -->
+</head>
+<body>
+<div id="offline-banner">You are offline — changes are saved locally</div>
+<div id="install-prompt">
+  <h4>Add to Home Screen</h4>
+  <p>Install this app on your iPhone or iPad for the best experience — works offline too.</p>
+  <div class="steps">
+    <span>1.</span> Tap the Share button ⬆ in Safari<br>
+    <span>2.</span> Tap "Add to Home Screen"<br>
+    <span>3.</span> Tap "Add" — done!
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button class="btn btn-primary btn-sm" style="flex:1" onclick="dismissInstall()">Got it</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('install-prompt').classList.remove('visible')">Later</button>
+  </div>
+</div>
+<!-- CONNECTION GATE OVERLAY -->
+<div id="connect-overlay" style="
+  display:none; position:fixed; top:0;left:0;width:100%;height:100%; z-index:500;
+  background:linear-gradient(160deg,#f8fef8 0%,#f0f9f0 100%);
+  align-items:center; justify-content:center;
+  font-family:'Nunito',sans-serif;
+">
+  <div style="text-align:center;max-width:400px;padding:40px 32px;
+    background:#fff;border-radius:24px;
+    border:1.5px solid rgba(102,187,106,0.22);
+    box-shadow:0 12px 48px rgba(30,80,35,0.10);">
+    <div style="font-size:36px;margin-bottom:12px">🌿</div>
+    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:600;color:#1b2e1c;margin-bottom:6px">
+      Love Joy Farms Manager
+    </div>
+    <div style="font-size:12px;color:#5a7a5c;margin-bottom:28px;letter-spacing:1px">
+      Connecting to cloud database…
+    </div>
+    <div id="connect-status-msg" style="font-size:13px;color:#4a6e4c;min-height:20px;margin-bottom:20px"></div>
+    <div id="connect-spinner" style="margin-bottom:20px">
+      <div style="width:36px;height:36px;border:3px solid #c8e6c9;border-top-color:#66bb6a;
+        border-radius:50%;animation:spin 0.9s linear infinite;margin:0 auto"></div>
+    </div>
+    <button id="connect-btn" onclick="manualConnect()"
+      style="display:none;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;
+        padding:12px 32px;background:linear-gradient(135deg,#66bb6a,#388e3c);
+        color:#fff;border:none;border-radius:20px;cursor:pointer;
+        box-shadow:0 2px 10px rgba(56,142,60,0.25);letter-spacing:1px;
+        transition:all 0.2s">
+      ⟳ Connect Now
+    </button>
+    <div id="connect-offline-opt" style="display:none;margin-top:14px">
+      <button onclick="continueOffline()"
+        style="font-family:'Nunito',sans-serif;font-size:11px;color:#9e9e9e;
+          background:none;border:none;cursor:pointer;text-decoration:underline">
+        Continue offline (changes won't sync)
+      </button>
+    </div>
+    <div style="font-size:10px;color:#b0c4b1;margin-top:24px;line-height:1.6">
+      Requires internet · Data saved to Google Firebase<br>
+      <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e28183908d8e918f8b968ad0a2858f838b8ecc818d8f">[email&#160;protected]</a> · lovejoy-farms
+    </div>
+    <div id="file-protocol-warn" style="display:none;margin-top:12px;padding:10px 14px;background:#fff3e0;border-radius:8px;font-size:11px;color:#e65100;font-weight:600;line-height:1.5">
+      ⚠ On iPad: open via Safari's published link, not as a local file.<br>
+      Use the Claude <b>Publish</b> link or save to Files and open in Safari.
+    </div>
+  </div>
+</div>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+#connect-overlay.hidden { display:none !important; visibility:hidden !important; pointer-events:none !important; }
+</style>
+
+<!-- INLINE DIALOG (replaces prompt/confirm for Safari iPad compatibility) -->
+<div id="inline-dialog-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;
+  background:rgba(0,0,0,0.35);align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:20px;padding:28px 28px 22px;max-width:340px;width:90%;
+    box-shadow:0 16px 48px rgba(30,80,35,0.18);font-family:'Nunito',sans-serif">
+    <div id="idlg-title" style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;
+      font-weight:600;color:#1b2e1c;margin-bottom:8px"></div>
+    <div id="idlg-msg" style="font-size:13px;color:#4a6e4c;margin-bottom:16px;line-height:1.5"></div>
+    <input id="idlg-input" type="text" style="display:none;width:100%;padding:10px 14px;
+      font-size:15px;font-family:'Nunito',sans-serif;border:1.5px solid #c8e6c9;
+      border-radius:10px;margin-bottom:16px;outline:none;color:#1b2e1c;
+      box-sizing:border-box" placeholder="">
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button id="idlg-cancel" style="display:none;font-family:'Nunito',sans-serif;
+        font-size:13px;font-weight:700;padding:9px 20px;background:#f4fbf5;
+        border:1.5px solid #c8e6c9;color:#4a6e4c;border-radius:12px;cursor:pointer">Cancel</button>
+      <button id="idlg-ok" style="font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;
+        padding:9px 24px;background:linear-gradient(135deg,#66bb6a,#388e3c);
+        color:#fff;border:none;border-radius:12px;cursor:pointer;
+        box-shadow:0 2px 8px rgba(56,142,60,0.25)">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="app-header">
+  <div class="app-title">LOVE JOY <span>FARMS</span> MANAGER</div>
+  <button id="reconnect-btn" onclick="manualConnect()" title="Reconnect to cloud" style="display:none;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;padding:4px 12px;background:rgba(102,187,106,0.12);border:1.5px solid rgba(102,187,106,0.35);color:#388e3c;border-radius:12px;cursor:pointer;white-space:nowrap;transition:all .15s">⟳ Reconnect</button>
+  <div id="db-status" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;color:#66bb6a;letter-spacing:1px;padding:4px 10px;background:rgba(102,187,106,0.1);border-radius:12px;cursor:default;white-space:nowrap">◌ Connecting</div>
+  <button id="user-badge" onclick="switchUser()" title="Switch user" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;padding:4px 10px;background:rgba(200,169,110,0.15);border:1.5px solid rgba(200,169,110,0.4);color:#7a5c2e;border-radius:12px;cursor:pointer;white-space:nowrap;">👤 —</button>
+  <div class="header-btns">
+    <button class="btn btn-ghost" onclick="connecting=false;firstSync=true;setDbStatus('connecting');doConnect(readCrashFile())">⟳ Refresh</button>
+    <button class="btn btn-ghost" onclick="exportData()">↓ Export JSON</button>
+
+    <label class="btn btn-ghost" style="cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1;vertical-align:middle;">↑ Import JSON<input type="file" id="import-file" accept=".json" onchange="importData(event)" style="display:none"></label>
+    <button class="btn btn-primary" onclick="addZone()">+ Add Zone</button>
+  </div>
+</div>
+
+<div id="app-content" style="pointer-events:auto;opacity:1;transition:opacity 0.3s;position:relative;">
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('schedule')">SCHEDULE</button>
+  <button class="tab-btn" onclick="showTab('map')">MAPS</button>
+  <button class="tab-btn" onclick="showTab('water')">WATER USAGE</button>
+  <button class="tab-btn" onclick="showTab('print')">PRINT</button>
+  <button class="tab-btn" onclick="showTab('help')">HELP</button>
+  <button class="tab-btn" onclick="showTab('propmap')">PROPERTY MAP</button>
+  <button class="tab-btn" onclick="showTab('dev')" style="color:var(--deep-sage);letter-spacing:1px">⚙ DEV</button>
+</div>
+
+<!-- SCHEDULE TAB -->
+<div id="tab-schedule" class="tab-panel active">
+  <div class="controls">
+    <div class="season-group">
+      <span class="season-label">SEASON</span>
+      <button class="seg-btn active" onclick="setSeason(this,'Spring')">Spring</button>
+      <button class="seg-btn" onclick="setSeason(this,'Summer')">Summer</button>
+      <button class="seg-btn" onclick="setSeason(this,'Fall')">Fall</button>
+      <button class="seg-btn" onclick="setSeason(this,'Winter')">Winter</button>
+    </div>
+    <div style="margin-left:auto;font-size:9px;color:var(--warm-tan)">Double-click a row to edit</div>
+  </div>
+  <div id="val-banner" class="val-banner"></div>
+  <div class="stats" id="stats-bar"></div>
+  <div class="tbl-wrap"><table id="sched-table">
+    <thead><tr>
+      <th>#</th><th>Zone Name</th><th>Group</th><th>Map</th><th>Duration</th>
+      <th>Frequency</th><th>Days</th><th>Start</th><th>End</th>
+      <th>Notes</th><th></th>
+    </tr></thead>
+    <tbody id="sched-body"></tbody>
+  </table></div>
+</div>
+
+<!-- MAP TAB -->
+<div id="tab-map" class="tab-panel">
+  <div class="controls" style="flex-wrap:wrap;gap:10px">
+    <button onclick="resetMapsOnly()" title="Reset all map positions to defaults" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;padding:5px 14px;background:rgba(255,255,255,0.7);border:1.5px solid var(--blush);color:var(--muted);border-radius:8px;cursor:pointer;transition:all .15s">↺ Reset Maps</button>
+    <button id="undo-btn" onclick="undo()" title="Undo last change (Ctrl+Z)" disabled style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;padding:5px 14px;background:rgba(255,255,255,0.7);border:1.5px solid var(--blush);color:var(--deep-rose);border-radius:8px;cursor:pointer;opacity:0.4;transition:all .15s">↩ Undo</button>
+    <div class="season-group" id="map-tab-group" style="flex-wrap:wrap">
+      <span class="season-label">MAP</span>
+      <!-- dynamically populated by renderMapTabs() -->
+    </div>
+    <div class="season-group" id="map-filter-group">
+      <span class="season-label">FILTER</span>
+      <!-- dynamically populated by renderGroupFilters() -->
+    </div>
+  </div>
+  <div id="map-containers">
+    <!-- dynamically populated by renderMapTabs() -->
+  </div>
+</div>
+
+<!-- PROPERTY MAP TAB -->
+<div id="tab-propmap" class="tab-panel">
+  <div class="propmap-wrap">
+    <!-- Sidebar -->
+    <div id="propmap-sidebar">
+      <div id="propmap-sidebar-header">
+        <h3>Property Map</h3>
+        <div style="font-size:10px;color:#81c784;margin-bottom:6px">12985 Spenceville Rd · Penn Valley, CA</div>
+        <div class="propmap-layer-btns">
+          <button class="propmap-layer-btn active" onclick="switchGeoBaseLayer('satellite')">Satellite</button>
+          <button class="propmap-layer-btn" onclick="switchGeoBaseLayer('naip')">Farm Hi-Res</button>
+          <button class="propmap-layer-btn" onclick="switchGeoBaseLayer('topo')">Topo</button>
+          <button class="propmap-layer-btn" onclick="switchGeoBaseLayer('street')">Street</button>
+        </div>
+      </div>
+      <div id="propmap-zone-list">
+        <!-- populated by renderGeoZones() -->
+        <div style="padding:20px 14px;color:#81c784;font-size:12px">Loading zones…</div>
+      </div>
+      <!-- Detail panel -->
+      <div id="propmap-detail" class="hidden">
+        <h4 id="pd-name">—</h4>
+        <div class="propmap-detail-row"><span>Type</span><strong id="pd-type">—</strong></div>
+        <div class="propmap-detail-row"><span>Schedule</span><strong id="pd-sched">—</strong></div>
+        <div class="propmap-detail-row"><span>Duration</span><strong id="pd-dur">—</strong></div>
+        <div class="propmap-detail-row"><span>Season</span><strong id="pd-notes">—</strong></div>
+        <div class="propmap-detail-btns">
+          <button class="propmap-detail-btn primary" id="pd-draw-btn" onclick="startDrawingForZone()">+ Draw Zone</button>
+          <button class="propmap-detail-btn ghost" id="pd-edit-btn" onclick="geoEditZone()">Edit Zone</button>
+          <button class="propmap-detail-btn ghost" id="pd-clear-btn" onclick="clearGeoZone()" style="color:#c0392b;border-color:#c0392b">Clear Polygon</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map container -->
+    <div id="propmap-map" style="position:relative">
+      <div id="propmap-draw-banner">Click to draw zone boundary · Double-click to finish</div>
+      <div class="propmap-info-box" id="propmap-info">Select a zone to draw or view its boundary</div>
+    </div>
+  </div>
+</div>
+
+<!-- WATER USAGE TAB -->
+<div id="tab-water" class="tab-panel">
+  <div class="gpm-row">
+    <span class="gpm-note">Flow rate is set per zone in the edit modal. Edit any zone to adjust its GPH.</span>
+  </div>
+  <div id="water-summary" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;"></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Zone Name</th><th>Duration (min)</th><th>Frequency</th>
+      <th>GPH</th><th>Sessions / Week</th><th>Gal / Session</th><th>Gal / Week</th><th>Gal / Month</th>
+    </tr></thead>
+    <tbody id="water-body"></tbody>
+  </table></div>
+</div>
+
+<!-- PRINT TAB -->
+<div id="tab-print" class="tab-panel">
+  <div class="section-title">PRINT OPTIONS</div>
+  <div class="print-options">
+    <div class="print-card">
+      <h3>SCHEDULE WITH DATA</h3>
+      <p>Prints current schedule with all zone data, in clean grayscale layout.</p>
+      <button class="btn btn-primary" onclick="printSchedule(false)">Print Schedule</button>
+    </div>
+    <div class="print-card">
+      <h3>BLANK FIELD SHEET</h3>
+      <p>Prints 30 blank rows with headers. Fill in by hand in the field.</p>
+      <button class="btn btn-ghost" onclick="printSchedule(true)">Print Blank</button>
+    </div>
+  </div>
+  <div style="font-size:10px;color:var(--warm-tan);line-height:1.8">
+    <div>• Both options open in a new tab — use your browser's print dialog (Ctrl+P / Cmd+P)</div>
+    <div>• Formatted for Letter paper, portrait, fits to 1 page</div>
+    <div>• Blank field sheet uses B&amp;W with thick black borders for easy field use</div>
+  </div>
+
+  <!-- Water Usage Estimator -->
+  <div style="margin-top:28px;padding:18px 20px;background:linear-gradient(135deg,#f0faf0,#fff);border:1.5px solid rgba(102,187,106,0.22);border-radius:14px;max-width:500px">
+    <div class="section-title" style="margin-bottom:12px">WATER USAGE ESTIMATOR</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.5px">Rate ($/CCF or $/kgal):</label>
+      <input id="water-rate" type="number" min="0" step="0.01" value="4.50"
+        style="width:80px;padding:5px 8px;border:1.5px solid #c8e6c9;border-radius:8px;font-size:12px;font-family:Nunito,sans-serif"
+        oninput="calcWaterUsage()">
+      <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.5px">per:</label>
+      <select id="water-unit" onchange="calcWaterUsage()"
+        style="padding:5px 8px;border:1.5px solid #c8e6c9;border-radius:8px;font-size:12px;font-family:Nunito,sans-serif">
+        <option value="1000">1,000 gal (kgal)</option>
+        <option value="748">CCF (748 gal)</option>
+      </select>
+    </div>
+    <div id="water-result" style="font-size:12px;color:var(--ink);line-height:2"></div>
+  </div>
+</div>
+
+<!-- HELP TAB -->
+<div id="tab-help" class="tab-panel">
+
+  <!-- Quick-nav bar -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
+    <span style="font-size:10px;color:var(--muted);align-self:center;letter-spacing:1px;text-transform:uppercase;font-weight:700">Jump to:</span>
+    <button class="btn btn-ghost btn-sm" onclick="scrollToSection('hs-start')">Getting Started</button>
+    <button class="btn btn-ghost btn-sm" onclick="scrollToSection('hs-schedule')">Schedule</button>
+    <button class="btn btn-ghost btn-sm" onclick="scrollToSection('hs-maps')">Maps</button>
+    <button class="btn btn-ghost btn-sm" onclick="scrollToSection('hs-water')">Water Usage</button>
+    <button class="btn btn-ghost btn-sm" onclick="scrollToSection('hs-groups')">Overlap Groups</button>
+    <button class="btn btn-ghost btn-sm" onclick="scrollToSection('hs-sync')">Cloud Sync</button>
+    <button class="btn btn-ghost btn-sm" onclick="scrollToSection('hs-print')">Print</button>
+    <button class="btn btn-ghost btn-sm" onclick="scrollToSection('hs-gh')">Greenhouse</button>
+    <button class="btn btn-ghost btn-sm" onclick="scrollToSection('hs-tips')">Tips</button>
+    <button class="btn btn-ghost btn-sm" onclick="scrollToSection('hs-security')">Security</button>
+  </div>
+
+  <!-- ── GETTING STARTED ───────────────────────────────────────────────── -->
+  <div id="hs-start" class="help-section">
+    <h3>GETTING STARTED</h3>
+    <div class="help-row"><span class="help-key">What is this app?</span><span class="help-val">Love Joy Farms Manager is your complete irrigation scheduling tool. It tracks every watering zone on your property, prevents schedule conflicts, calculates water usage, and syncs live across all your devices — PC, iPad, and iPhone — through the cloud.</span></div>
+    <div class="help-row"><span class="help-key">First time opening?</span><span class="help-val">You'll be asked for your name. This is just so other users can see who made recent changes — it's stored only on your device. You can skip it, but entering your name is recommended.</span></div>
+    <div class="help-row"><span class="help-key">Status pill (top of screen)</span><span class="help-val"><b>● Live · Carol</b> means you're connected and changes sync instantly. <b>↑ Saving…</b> means a change is being written to the cloud. <b>○ Offline</b> means no internet — changes are saved locally and will sync automatically when you reconnect.</span></div>
+    <div class="help-row"><span class="help-key">Adding your first zone</span><span class="help-val">Click <b>+ Add Zone</b> in the top right. Fill in the Zone Name, how long it runs (Duration), how often (Frequency), which days, and what time it starts. End time fills in automatically. Click Save.</span></div>
+    <div class="help-row"><span class="help-key">Editing a zone</span><span class="help-val">Double-click any row in the Schedule table, or click the <b>Edit</b> button at the end of the row. A panel opens with all the fields. Make your changes and click Save — all devices update within a second.</span></div>
+    <div class="help-row"><span class="help-key">Deleting a zone</span><span class="help-val">Open the Edit panel for the zone, then click the red <b>Delete Zone</b> button at the bottom left of the panel. You'll be asked to confirm.</span></div>
+  </div>
+
+  <!-- ── SCHEDULE TAB ──────────────────────────────────────────────────── -->
+  <div id="hs-schedule" class="help-section">
+    <h3>SCHEDULE TAB — YOUR MAIN WORKING VIEW</h3>
+    <div class="help-row"><span class="help-key">What it shows</span><span class="help-val">Every watering zone in one table — name, group, map, duration, frequency, days, start/end times, and notes. This is where you manage all your zones.</span></div>
+    <div class="help-row"><span class="help-key">Season selector</span><span class="help-val">The Spring / Summer / Fall / Winter buttons at the top dim any zones that are out of season. This is based on the Notes field — zones with "paused Dec–Feb", "Active May–Sep only", or similar text are automatically greyed out in the relevant season. Your data is not deleted, just visually quieted.</span></div>
+    <div class="help-row"><span class="help-key">Summary cards</span><span class="help-val">The row of numbers below the season buttons shows: total zones, total run time (hours and minutes), average duration, number of greenhouse zones, greenhouse total duration, and any active errors.</span></div>
+    <div class="help-row"><span class="help-key">Zone Name</span><span class="help-val">Must be unique — no two zones can share the same name. If a duplicate exists, both rows turn red as a warning.</span></div>
+    <div class="help-row"><span class="help-key">Group</span><span class="help-val">Which overlap group(s) this zone belongs to. See the Overlap Groups section below for full explanation.</span></div>
+    <div class="help-row"><span class="help-key">Map</span><span class="help-val">Which map this zone appears on (Greenhouse, Outdoor, or any custom map you've created).</span></div>
+    <div class="help-row"><span class="help-key">Duration</span><span class="help-val">How many minutes this zone runs per session. Choose in 5-minute steps from 5 to 120 minutes.</span></div>
+    <div class="help-row"><span class="help-key">Frequency</span><span class="help-val">How often the zone runs — Daily, Every 2 Days, 3×/Week, Weekly, etc.</span></div>
+    <div class="help-row"><span class="help-key">Days</span><span class="help-val">Which days of the week this zone is scheduled. For example Mon/Wed/Fri or Tue/Thu/Sat.</span></div>
+    <div class="help-row"><span class="help-key">Start Time</span><span class="help-val">When this zone turns on, in HH:MM format (24-hour clock). Example: 06:30 for 6:30 AM, 14:00 for 2:00 PM.</span></div>
+    <div class="help-row"><span class="help-key">End Time</span><span class="help-val">Auto-calculated as Start Time + Duration. You can override it manually if needed. Orange = end is before start (a mistake). Red = overlaps with another zone.</span></div>
+    <div class="help-row"><span class="help-key">Notes</span><span class="help-val">Free text — use it for crop info, seasonal reminders, maintenance notes, or anything useful. The season dimming logic reads this field, so phrases like "paused Dec–Feb" or "Active May–Sep only" will automatically trigger seasonal dimming.</span></div>
+    <div class="help-row"><span class="help-key">Red highlights</span><span class="help-val">Red zone name = duplicate name. Red start/end times = this zone's time overlaps with another zone it's not allowed to share time with. Fix by changing the start time, or assigning both zones to the same Overlap Group.</span></div>
+    <div class="help-row"><span class="help-key">Orange end time</span><span class="help-val">The end time is at or before the start time in the same row. Usually means the end time was entered manually and is incorrect.</span></div>
+  </div>
+
+  <!-- ── MAPS TAB ──────────────────────────────────────────────────────── -->
+  <div id="hs-maps" class="help-section">
+    <h3>MAPS TAB — VISUAL LAYOUT OF YOUR ZONES</h3>
+    <div class="help-row"><span class="help-key">What it shows</span><span class="help-val">A visual floor plan of your irrigation zones. Each zone appears as a labelled box you can move around. Zones are colour-coded by which wall or side they sit on.</span></div>
+    <div class="help-row"><span class="help-key">Multiple maps</span><span class="help-val">Each property area gets its own map tab — Greenhouse, Outdoor, and any custom maps you create (e.g. Back Yard, Orchard). Switch between them using the MAP buttons at the top of the tab.</span></div>
+    <div class="help-row"><span class="help-key">Adding a zone to a map</span><span class="help-val">Open the Edit panel for any zone (double-click it in Schedule). Set the <b>Map</b> field to the map you want it on. Set <b>Map Side</b> (Left, Right, Top, Bottom, or Centre) to choose which wall it sits on. The zone will appear on that map immediately.</span></div>
+    <div class="help-row"><span class="help-key">Drag to reposition</span><span class="help-val">Click and hold any zone box, then drag it to a new position. Faint dashed rail guides show where zones will snap to. Release to drop — the position saves automatically to all devices. On iPad/iPhone, use your finger to drag.</span></div>
+    <div class="help-row"><span class="help-key">Snap rails</span><span class="help-val">The faint dashed lines on the left, right, and centre of the map are snap rails. Zones dragged near them will snap into place, keeping everything neatly aligned.</span></div>
+    <div class="help-row"><span class="help-key">Auto-placed zones</span><span class="help-val">Zones that haven't been manually positioned show a dashed border and a tiny "auto" label. They are placed automatically in the next available slot. Drag them once to lock in their permanent position.</span></div>
+    <div class="help-row"><span class="help-key">Colours by wall</span><span class="help-val">Left wall = sage green · Right wall = lighter green · Top/North = teal · Bottom/South = indigo · Centre = orange. This makes it easy to read which side of the space a zone is in at a glance.</span></div>
+    <div class="help-row"><span class="help-key">Group filter</span><span class="help-val">The FILTER buttons (All, Group A, Group B, etc.) show only zones from that overlap group. New groups appear automatically when you create them.</span></div>
+    <div class="help-row"><span class="help-key">Red error badge</span><span class="help-val">A red circle with "!" on a zone means it has a validation error (duplicate name or time overlap). Click the zone to see the detail and fix it.</span></div>
+    <div class="help-row"><span class="help-key">Creating a new map</span><span class="help-val">When editing any zone, click the Map dropdown and choose <b>+ New map…</b>. Type a name (e.g. "Back Yard"). That map tab appears immediately and zones assigned to it will show there.</span></div>
+    <div class="help-row"><span class="help-key">Click a zone on the map</span><span class="help-val">Tapping/clicking a zone opens its detail card on the right — showing its full schedule, duration, gallons per week, and an Edit button to open the full editor.</span></div>
+  </div>
+
+  <!-- ── WATER USAGE TAB ───────────────────────────────────────────────── -->
+  <div id="hs-water" class="help-section">
+    <h3>WATER USAGE TAB — HOW MUCH WATER YOU'RE USING</h3>
+    <div class="help-row"><span class="help-key">What it shows</span><span class="help-val">For every zone: flow rate (GPH), sessions per week, gallons per session, gallons per week, and gallons per month. Summary cards at the top show total weekly and monthly usage, daily average, and separate totals for greenhouse vs outdoor zones.</span></div>
+    <div class="help-row"><span class="help-key">Flow Rate (GPH)</span><span class="help-val">Gallons Per Hour for each zone individually. Set this when editing a zone — look for the "Flow Rate (GPH)" field. Default is 1.0 GPH. A drip emitter might be 0.5 GPH; a sprinkler head might be 2–3 GPH. Ask your irrigation supplier if unsure.</span></div>
+    <div class="help-row"><span class="help-key">Gallons per session</span><span class="help-val">Calculated as: (GPH ÷ 60) × Duration in minutes. So a zone running 20 minutes at 1 GPH uses 0.33 gallons per minute × 20 = ~6.6 gallons per session.</span></div>
+    <div class="help-row"><span class="help-key">Monthly estimate</span><span class="help-val">Weekly gallons × 4.33 (average weeks per month). This is an estimate — actual usage varies with season and rainfall.</span></div>
+  </div>
+
+  <!-- ── OVERLAP GROUPS ────────────────────────────────────────────────── -->
+  <div id="hs-groups" class="help-section">
+    <h3>OVERLAP GROUPS — MANAGING SCHEDULE CONFLICTS</h3>
+    <div class="help-row"><span class="help-key">What is an overlap conflict?</span><span class="help-val">By default, no two zones can run at the same time. If Zone A runs 06:00–06:20 and Zone B runs 06:10–06:30, that's a conflict — the app flags both red. This prevents overloading your water pressure.</span></div>
+    <div class="help-row"><span class="help-key">When is overlap OK?</span><span class="help-val">Sometimes you want zones to run simultaneously — for example all greenhouse deep beds are on the same valve and water together. Overlap Groups let you tell the app "these zones are allowed to overlap."</span></div>
+    <div class="help-row"><span class="help-key">Leave blank</span><span class="help-val">No overlap allowed. This zone must have a completely clear time slot — no other zone (outside its group) can overlap with it.</span></div>
+    <div class="help-row"><span class="help-key">Enter a letter: A</span><span class="help-val">This zone can overlap with any other zone that also has "A" in its group. Zones in Group A run together freely without triggering an error.</span></div>
+    <div class="help-row"><span class="help-key">Enter multiple: A,C</span><span class="help-val">This zone can overlap with any zone that has A <em>or</em> C in its group. Useful when a zone belongs to two different overlap scenarios.</span></div>
+    <div class="help-row"><span class="help-key">Enter ALL</span><span class="help-val">This zone can overlap with literally any other zone, regardless of group. Use sparingly — typically for a low-pressure zone like a misting system that doesn't affect water pressure.</span></div>
+    <div class="help-row"><span class="help-key">Greenhouse beds example</span><span class="help-val">GH Deep Beds 1–9 are all Group A. They can all run at the same time without any conflict errors. GH Shallow Beds A–B are Group B — they overlap with each other but not with Group A zones.</span></div>
+  </div>
+
+  <!-- ── CLOUD SYNC ────────────────────────────────────────────────────── -->
+  <div id="hs-sync" class="help-section">
+    <h3>CLOUD SYNC — SHARING ACROSS DEVICES</h3>
+    <div class="help-row"><span class="help-key">How it works</span><span class="help-val">The app connects to Google Firebase (a free cloud database) and saves every change in real time. Open the app on your iPad, PC, or iPhone — they all show the same data within about one second of any change being made.</span></div>
+    <div class="help-row"><span class="help-key">Who can see my data?</span><span class="help-val">Only people who have this HTML file can access your data. The database is tied to your Google account (<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bcdfddced3d0cfd1d5c8d48efcdbd1ddd5d092dfd3d1">[email&#160;protected]</a>). For now it's open to anyone with the file — consider adding a password later for extra security.</span></div>
+    <div class="help-row"><span class="help-key">Crash recovery</span><span class="help-val">Every time you make a change, a crash file is written locally before the cloud save. If the app closes mid-save (crash, power loss, browser closed), the crash file survives. On next launch the app detects it, compares timestamps with the cloud, and pushes the newer version automatically. A yellow banner confirms recovery.</span></div>
+    <div class="help-row"><span class="help-key">What happens offline?</span><span class="help-val">If you lose internet, the app keeps working using data saved locally on your device. A grey "○ Offline" pill appears at the top. Any changes you make are queued and will sync automatically the moment you reconnect — you won't lose anything. If offline at startup, a "Continue offline" link appears on the loading screen.</span></div>
+    <div class="help-row"><span class="help-key">Manual Connect button</span><span class="help-val">If the app can't connect automatically, a "⟳ Connect Now" button appears on the loading screen. Click it to retry. If connection still fails, click "Continue offline" to use the app with locally saved data only.</span></div>
+    <div class="help-row"><span class="help-key">Reconnect button in header</span><span class="help-val">When the app is offline, a "⟳ Reconnect" button appears in the top bar. Click it any time to retry the cloud connection.</span></div>
+    <div class="help-row"><span class="help-key">Multiple users at once</span><span class="help-val">Up to 3 users can edit simultaneously. The last person to save wins — there's no locking mechanism, so if two people edit the same zone at the exact same moment, the most recent save is kept. In practice this is rarely an issue.</span></div>
+    <div class="help-row"><span class="help-key">Export JSON backup</span><span class="help-val">Click <b>Export JSON</b> (top right) to download a backup file of all your zone data. Save it somewhere safe. If you ever need to restore, click <b>Import JSON</b> and select the file.</span></div>
+    <div class="help-row"><span class="help-key">Running on a new device</span><span class="help-val">Just open the HTML file in Safari (iPad/iPhone) or Chrome/Edge (PC). The app downloads all your data from the cloud automatically — no setup needed.</span></div>
+    <div class="help-row"><span class="help-key">Opening on iPad</span><span class="help-val">Open the file in Safari, then tap the Share button ⬆ → "Add to Home Screen" → Add. The app installs to your home screen and works like a native app, full screen with no browser bars.</span></div>
+  </div>
+
+
+  <!-- ── SECURITY ──────────────────────────────────────────────────────── -->
+  <div id="hs-security" class="help-section">
+    <h3>SECURITY</h3>
+    <div class="help-row"><span class="help-key">Who can access my data?</span><span class="help-val">Only people who have this HTML file AND know the shared access token embedded in it. The Firestore database validates the token on every read and write — requests without it are rejected at the database level.</span></div>
+    <div class="help-row"><span class="help-key">Is the API key safe?</span><span class="help-val">The Firebase API key is visible in the HTML source — this is normal and expected for Firebase web apps. The key alone doesn't grant access. Security is enforced by Firestore security rules that require the shared token.</span></div>
+    <div class="help-row"><span class="help-key">XSS protection</span><span class="help-val">All user-entered data (zone names, notes, groups) is HTML-escaped before being displayed. This prevents malicious code from running even if someone were to write a crafted value to the database.</span></div>
+    <div class="help-row"><span class="help-key">Content Security Policy</span><span class="help-val">A CSP header restricts which scripts and resources the app can load, blocking unauthorized injections from unknown sources.</span></div>
+    <div class="help-row"><span class="help-key">Keep the file private</span><span class="help-val">Don't share the HTML file publicly — it contains the shared access token. Share it only with your 1–3 authorized users via AirDrop, email, or iCloud Drive directly.</span></div>
+    <div class="help-row"><span class="help-key">Update the security rules</span><span class="help-val">Go to Firebase Console → Firestore → Rules. Replace the current rules with the token-checking rules. See the "Cloud Sync" section above for instructions.</span></div>
+  </div>
+
+  <!-- ── PRINT TAB ─────────────────────────────────────────────────────── -->
+  <div id="hs-print" class="help-section">
+    <h3>PRINT TAB — PAPER COPIES</h3>
+    <div class="help-row"><span class="help-key">Print Schedule</span><span class="help-val">Opens a clean, formatted version of your full schedule in a new browser tab. Use Ctrl+P (PC) or Cmd+P (Mac) to print. Formatted for US Letter paper, portrait orientation, fits to one page.</span></div>
+    <div class="help-row"><span class="help-key">Print Blank Field Sheet</span><span class="help-val">Opens a blank version with all headers and 30 empty rows. Print it and fill in by hand while you're outside in the field. Black and white, thick borders for easy writing.</span></div>
+  </div>
+
+  <!-- ── GREENHOUSE ────────────────────────────────────────────────────── -->
+  <div id="hs-gh" class="help-section">
+    <h3>GREENHOUSE ZONES</h3>
+    <div class="help-row"><span class="help-key">Deep Beds 1–9 (Group A)</span><span class="help-val">4 ft × 8 ft × 2 ft deep raised beds. Each runs 20 minutes every 2 days at 1 GPH ≈ 20 gallons per session. Deep soil holds moisture well — daily watering would over-saturate the roots.</span></div>
+    <div class="help-row"><span class="help-key">Shallow Beds A–B (Group B)</span><span class="help-val">4 ft × 4 ft × 6 inch deep beds. Each runs 10 minutes daily at 1 GPH ≈ 10 gallons per session. Shallow soil dries out quickly — daily watering is essential.</span></div>
+    <div class="help-row"><span class="help-key">Year-round</span><span class="help-val">Greenhouse zones are not paused in winter — the greenhouse maintains a frost-free environment. All 11 greenhouse zones run year-round.</span></div>
+    <div class="help-row"><span class="help-key">Outdoor zones in winter</span><span class="help-val">Most outdoor zones are paused December through February due to freezing temperatures. The Season selector set to Winter will visually dim those zones. The schedule data is not deleted — just inactive until spring.</span></div>
+  </div>
+
+  <!-- ── TIPS ──────────────────────────────────────────────────────────── -->
+  <div id="hs-tips" class="help-section">
+    <h3>TIPS &amp; BEST PRACTICES</h3>
+    <div class="help-row"><span class="help-key">Zero errors is the goal</span><span class="help-val">The Errors count in the summary cards should always be 0. Red highlights mean something needs attention — fix them before the next watering cycle runs.</span></div>
+    <div class="help-row"><span class="help-key">Notes field is powerful</span><span class="help-val">Write seasonal keywords in the Notes field and the app will dim zones automatically. Phrases that trigger dimming: "paused Dec–Feb", "Active Apr–Oct only", "Active May–Sep only", "Apr–Jun".</span></div>
+    <div class="help-row"><span class="help-key">Back up regularly</span><span class="help-val">Cloud sync is reliable but it's good practice to Export JSON once a week and save it to your computer or Google Drive. Takes 10 seconds and protects against any account issues.</span></div>
+    <div class="help-row"><span class="help-key">GPH accuracy</span><span class="help-val">Water usage estimates are only as accurate as your GPH values. Measure your actual flow rates by running each zone for 1 minute and collecting the water in a bucket. Update the GPH in each zone's Edit panel for precise numbers.</span></div>
+    <div class="help-row"><span class="help-key">Map organisation</span><span class="help-val">Create one map per distinct area — Greenhouse, Front Yard, Back Yard, Orchard, etc. Drag zones into position once and you'll have a permanent visual reference for your whole irrigation system.</span></div>
+    <div class="help-row"><span class="help-key">Overlap groups for irrigation lines</span><span class="help-val">Zones sharing the same physical irrigation valve or water line should be in the same overlap group — they physically run together and need the same start time. Zones on separate lines should have no group or different groups.</span></div>
+    <div class="help-row"><span class="help-key">Something looks wrong?</span><span class="help-val">Try refreshing the page (F5 on PC, pull down in Safari on iPad). If data looks out of date, check the status pill — if it shows "○ Offline", your device isn't connected to the internet. Data will sync when you reconnect.</span></div>
+  </div>
+
+  <div style="margin-top:24px;padding:14px 18px;background:var(--parchment);border-radius:10px;font-size:10px;color:var(--muted);line-height:1.7">
+    <strong style="color:var(--deep-rose);display:block;margin-bottom:4px">Love Joy Farms Manager · Version 2.0</strong>
+    Built for Love Joy Farms, Grass Valley CA · Firebase cloud sync · Works on PC, iPad, and iPhone
+  </div>
+</div>
+
+
+</div><!-- /app-content -->
+
+<!-- DEV TAB -->
+<div id="tab-dev" class="tab-panel">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:12px 16px;background:rgba(125,158,128,0.07);border-radius:10px;border-left:3px solid var(--sage)">
+    <span style="font-size:18px">⚙</span>
+    <div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--ink)">Developer Override Console</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">Direct database and application control. Changes take immediate effect and sync to all devices.</div>
+    </div>
+  </div>
+
+  <!-- ── DATA MANAGEMENT ─────────────────────────────────── -->
+  <div class="help-section">
+    <h3>DATA MANAGEMENT</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="btn btn-ghost" onclick="devResetMaps()">↺ Reset Map Positions</button>
+      <button class="btn btn-ghost" onclick="devResetAll()">↺ Factory Reset All Data</button>
+      <button class="btn btn-ghost" onclick="devClearLocalStorage()">🗑 Clear LocalStorage</button>
+      <button class="btn btn-ghost" onclick="devClearCrashFile()">🗑 Clear Crash File</button>
+      <button class="btn btn-ghost" onclick="devExportRaw()">↓ Export Raw JSON</button>
+    </div>
+    <div id="dev-data-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+  </div>
+
+  <!-- ── FIREBASE ────────────────────────────────────────── -->
+  <div class="help-section">
+    <h3>FIREBASE</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="btn btn-ghost" onclick="devForceSync()">⟳ Force Cloud Sync</button>
+      <button class="btn btn-ghost" onclick="devPushDefaults()">↑ Push Defaults to Cloud</button>
+      <button class="btn btn-ghost" onclick="devReadCloud()">↓ Read Cloud → Console</button>
+      <button class="btn btn-ghost" onclick="devDeleteCloud()">🗑 Delete Cloud Document</button>
+    </div>
+    <div id="dev-fb-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+  </div>
+
+  <!-- ── SCHEMA ──────────────────────────────────────────── -->
+  <div class="help-section">
+    <h3>SCHEMA & MIGRATION</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="btn btn-ghost" onclick="devRunMigrate()">▶ Run migrate() on Local Data</button>
+      <button class="btn btn-ghost" onclick="devBumpSchema()">▶ Force Schema v→v+1</button>
+      <button class="btn btn-ghost" onclick="devShowSchema()">👁 Show Zone Schema</button>
+    </div>
+    <div id="dev-schema-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+  </div>
+
+  <!-- ── ZONE BULK EDIT ──────────────────────────────────── -->
+  <div class="help-section">
+    <h3>BULK ZONE OPERATIONS</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="btn btn-ghost" onclick="devClearAllMapPositions()">Clear All Map Positions</button>
+      <button class="btn btn-ghost" onclick="devNormalizeZones()">Normalize All Zones (fill defaults)</button>
+      <button class="btn btn-ghost" onclick="devListErrors()">List All Validation Errors</button>
+      <button class="btn btn-ghost" onclick="devCountZones()">Zone Stats → Console</button>
+    </div>
+    <div id="dev-zone-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+  </div>
+
+  <!-- ── LIVE EDITOR ─────────────────────────────────────── -->
+  <div class="help-section">
+    <h3>LIVE JSON EDITOR</h3>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Paste raw JSON zone array below and click Apply to override all zones. Useful for bulk imports or emergency fixes.</div>
+    <textarea id="dev-json-editor" style="width:100%;height:180px;font-family:'Courier New',monospace;font-size:11px;background:rgba(0,0,0,0.03);border:1.5px solid var(--light-border);border-radius:8px;padding:10px;color:var(--ink);resize:vertical" placeholder='Paste zones JSON array here…'></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="devLoadToEditor()">Load Current → Editor</button>
+      <button class="btn btn-primary" onclick="devApplyEditor()">▶ Apply JSON</button>
+    </div>
+    <div id="dev-editor-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+  </div>
+
+  <!-- ── APP STATE ───────────────────────────────────────── -->
+  <div class="help-section">
+    <h3>APP STATE</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="btn btn-ghost" onclick="devShowState()">👁 Show App State → Console</button>
+      <button class="btn btn-ghost" onclick="devReloadPage()">↺ Hard Reload Page</button>
+      <button class="btn btn-ghost" onclick="devToggleOffline()">⚡ Toggle Offline Mode</button>
+      <button class="btn btn-ghost" onclick="devClearUndo()">🗑 Clear Undo Stack</button>
+    </div>
+    <pre id="dev-state-pre" style="font-size:10px;font-family:'Courier New',monospace;background:rgba(0,0,0,0.03);border-radius:8px;padding:10px;max-height:200px;overflow:auto;border:1.5px solid var(--light-border);white-space:pre-wrap;display:none"></pre>
+  </div>
+
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">EDIT ZONE</div>
+    <div class="modal-grid">
+      <div class="form-group full">
+        <label>ZONE NAME</label>
+        <input type="text" id="f-name" placeholder="e.g. Front Lawn">
+      </div>
+      <div class="form-group">
+        <label>OVERLAP GROUP</label>
+        <input type="text" id="f-group" placeholder="A  or  A,C  or  ALL  or blank">
+        <span class="form-hint">Letters A–F comma-separated, ALL, or leave blank</span>
+      </div>
+      <div class="form-group">
+        <label>MAP</label>
+        <select id="f-mapid"></select>
+        <span class="form-hint">Which map this zone appears on</span>
+      </div>
+      <div class="form-group">
+        <label>MAP SIDE</label>
+        <select id="f-mapside">
+          <option value="">— Not placed —</option>
+          <option value="left">Left wall</option>
+          <option value="right">Right wall</option>
+          <option value="top">Top / North</option>
+          <option value="bottom">Bottom / South</option>
+          <option value="center">Centre</option>
+        </select>
+        <span class="form-hint">Which side of the map this zone sits on</span>
+      </div>
+      <div class="form-group">
+        <label>MAP POSITION (slot)</label>
+        <input type="number" id="f-mappos" min="0" max="999" step="1" placeholder="Auto">
+        <span class="form-hint">Slot along that wall — or drag the zone directly on the map</span>
+      </div>
+      <div class="form-group">
+        <label>DURATION (MIN)</label>
+        <select id="f-duration" onchange="autoEndTime()"></select>
+      </div>
+      <div class="form-group">
+        <label>FREQUENCY</label>
+        <select id="f-freq"></select>
+      </div>
+      <div class="form-group">
+        <label>DAYS</label>
+        <select id="f-days"></select>
+      </div>
+      <div class="form-group">
+        <label>START TIME</label>
+        <input type="text" id="f-start" placeholder="06:00" maxlength="5" oninput="autoEndTime()">
+      </div>
+      <div class="form-group">
+        <label>END TIME</label>
+        <input type="text" id="f-end" placeholder="auto-calculated" maxlength="5">
+        <span class="form-hint">Auto-fills from start + duration</span>
+      </div>
+      <div class="form-group">
+        <label>Flow Rate (GPH)</label>
+        <input type="number" id="f-gph" value="1.0" min="0.1" max="50" step="0.1" placeholder="e.g. 1.0">
+        <span class="form-hint">Gallons per hour for this zone</span>
+      </div>
+      <div class="form-group full">
+        <label>NOTES</label>
+        <textarea id="f-notes" placeholder="Seasonal info, crop, reminders…"></textarea>
+      </div>
+    </div>
+    <div class="modal-err" id="modal-err"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="modal-delete-btn" onclick="deleteZone()">Delete Zone</button>
+      <button class="btn btn-ghost btn-sm" id="modal-dupe-btn" onclick="duplicateZone()" style="display:none">⧉ Duplicate</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveModal()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ═══════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const DURATIONS = Array.from({length:24},(_,i)=>(i+1)*5);
+const FREQUENCIES = ['Daily','Every 2 Days','Every 3 Days','2×/Week','3×/Week','Weekly','Bi-Weekly','Monthly'];
+const DAYS_OPTS = ['Mon–Sun','Mon/Wed/Fri','Tue/Thu/Sat','Tue/Thu/Sun','Mon/Wed','Tue/Thu','Mon/Fri','Wednesday','Saturday','Sunday','Monday','Tuesday','Thursday','Friday'];
+const FREQ_SESSIONS = {'Daily':7,'Every 2 Days':3.5,'Every 3 Days':2.33,'2×/Week':2,'3×/Week':3,'Weekly':1,'Bi-Weekly':0.5,'Monthly':0.25};
+
+// ═══════════════════════════════════════════════════════════
+// DEFAULT DATA
+// ═══════════════════════════════════════════════════════════
+const DEFAULT_ZONES = [
+  {id:1, name:'Front Lawn',      group:'',  dur:20, freq:'Daily',        days:'Mon–Sun',     start:'06:00',end:'06:20',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:2, name:'Back Lawn',       group:'',  dur:25, freq:'Daily',        days:'Mon–Sun',     start:'06:20',end:'06:45',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:3, name:'Side Yard Left',  group:'',  dur:15, freq:'Every 2 Days', days:'Mon/Wed/Fri', start:'06:45',end:'07:00',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:4, name:'Side Yard Right', group:'',  dur:15, freq:'Every 2 Days', days:'Tue/Thu/Sat', start:'07:00',end:'07:15',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:5, name:'Rose Garden',     group:'',  dur:10, freq:'3×/Week',      days:'Mon/Wed/Fri', start:'07:15',end:'07:25',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:6, name:'Vegetable Patch', group:'',  dur:10, freq:'Daily',        days:'Mon–Sun',     start:'07:25',end:'07:35',notes:'Active Apr–Oct only',                            gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:7, name:'Herb Garden',     group:'',  dur:10, freq:'Every 2 Days', days:'Tue/Thu/Sat', start:'07:35',end:'07:45',notes:'Active Apr–Oct only',                            gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:8, name:'Flower Bed North',group:'',  dur:10, freq:'3×/Week',      days:'Mon/Wed/Fri', start:'07:45',end:'07:55',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:9, name:'Flower Bed South',group:'',  dur:10, freq:'3×/Week',      days:'Tue/Thu/Sat', start:'07:55',end:'08:05',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:10,name:'Driveway Strip',  group:'',  dur:10, freq:'Every 2 Days', days:'Mon/Wed/Fri', start:'08:05',end:'08:15',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:11,name:'Backyard Trees',  group:'',  dur:30, freq:'Weekly',       days:'Saturday',    start:'08:15',end:'08:45',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:12,name:'Front Trees',     group:'',  dur:30, freq:'Weekly',       days:'Sunday',      start:'08:45',end:'09:15',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:13,name:'Patio Planters',  group:'',  dur:5,  freq:'Daily',        days:'Mon–Sun',     start:'09:15',end:'09:20',notes:'Active May–Sep; bring indoors in winter',         gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:14,name:'Shrub Border',    group:'',  dur:20, freq:'Every 2 Days', days:'Mon/Wed/Fri', start:'09:20',end:'09:40',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:15,name:'Slope / Hill',    group:'',  dur:20, freq:'3×/Week',      days:'Tue/Thu/Sun', start:'09:40',end:'10:00',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:16,name:'Pool Surround',   group:'',  dur:5,  freq:'Every 2 Days', days:'Wednesday',   start:'10:00',end:'10:05',notes:'Active May–Sep only',                            gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:17,name:'Orchard Zone A',  group:'',  dur:20, freq:'Weekly',       days:'Tuesday',     start:'10:05',end:'10:25',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:18,name:'Orchard Zone B',  group:'',  dur:20, freq:'Weekly',       days:'Friday',      start:'10:25',end:'10:45',notes:'Active Mar–Nov; paused Dec–Feb (freeze)',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+  {id:19,name:'GH Deep Bed 1',   group:'A', dur:20, freq:'Every 2 Days', days:'Mon/Wed/Fri', start:'10:45',end:'11:05',notes:"4'×8'×2' deep | 20 gal/session | Year-round",   gph:1.0,mapSide:'left', mapPos:0,mapId:'greenhouse',ztype:'gh-deep'},
+  {id:20,name:'GH Deep Bed 2',   group:'A', dur:20, freq:'Every 2 Days', days:'Mon/Wed/Fri', start:'11:05',end:'11:25',notes:"4'×8'×2' deep | 20 gal/session | Year-round",   gph:1.0,mapSide:'left', mapPos:1,mapId:'greenhouse',ztype:'gh-deep'},
+  {id:21,name:'GH Deep Bed 3',   group:'A', dur:20, freq:'Every 2 Days', days:'Mon/Wed/Fri', start:'11:25',end:'11:45',notes:"4'×8'×2' deep | 20 gal/session | Year-round",   gph:1.0,mapSide:'left', mapPos:2,mapId:'greenhouse',ztype:'gh-deep'},
+  {id:22,name:'GH Deep Bed 4',   group:'A', dur:20, freq:'Every 2 Days', days:'Tue/Thu/Sat', start:'11:45',end:'12:05',notes:"4'×8'×2' deep | 20 gal/session | Year-round",   gph:1.0,mapSide:'left', mapPos:3,mapId:'greenhouse',ztype:'gh-deep'},
+  {id:23,name:'GH Deep Bed 5',   group:'A', dur:20, freq:'Every 2 Days', days:'Tue/Thu/Sat', start:'12:05',end:'12:25',notes:"4'×8'×2' deep | 20 gal/session | Year-round",   gph:1.0,mapSide:'left', mapPos:4,mapId:'greenhouse',ztype:'gh-deep'},
+  {id:24,name:'GH Deep Bed 6',   group:'A', dur:20, freq:'Every 2 Days', days:'Tue/Thu/Sat', start:'12:25',end:'12:45',notes:"4'×8'×2' deep | 20 gal/session | Year-round",   gph:1.0,mapSide:'right',mapPos:0,mapId:'greenhouse',ztype:'gh-deep'},
+  {id:25,name:'GH Deep Bed 7',   group:'A', dur:20, freq:'Every 2 Days', days:'Mon/Wed/Fri', start:'12:45',end:'13:05',notes:"4'×8'×2' deep | 20 gal/session | Year-round",   gph:1.0,mapSide:'right',mapPos:1,mapId:'greenhouse',ztype:'gh-deep'},
+  {id:26,name:'GH Deep Bed 8',   group:'A', dur:20, freq:'Every 2 Days', days:'Mon/Wed/Fri', start:'13:05',end:'13:25',notes:"4'×8'×2' deep | 20 gal/session | Year-round",   gph:1.0,mapSide:'right',mapPos:2,mapId:'greenhouse',ztype:'gh-deep'},
+  {id:27,name:'GH Deep Bed 9',   group:'A', dur:20, freq:'Every 2 Days', days:'Mon/Wed/Fri', start:'13:25',end:'13:45',notes:"4'×8'×2' deep | 20 gal/session | Year-round",   gph:1.0,mapSide:'right',mapPos:3,mapId:'greenhouse',ztype:'gh-deep'},
+  {id:28,name:'GH Shallow Bed A',group:'B', dur:10, freq:'Daily',        days:'Mon–Sun',     start:'13:45',end:'13:55',notes:'4\'×4\'×6" shallow | 10 gal/session | Year-round',gph:1.0,mapSide:'right',mapPos:4,mapId:'greenhouse',ztype:'gh-shallow'},
+  {id:29,name:'GH Shallow Bed B',group:'B', dur:10, freq:'Daily',        days:'Mon–Sun',     start:'13:55',end:'14:05',notes:'4\'×4\'×6" shallow | 10 gal/session | Year-round',gph:1.0,mapSide:'right',mapPos:5,mapId:'greenhouse',ztype:'gh-shallow'},
+  {id:30,name:'Lawn Seed Area',  group:'',  dur:15, freq:'Daily',        days:'Mon–Sun',     start:'14:05',end:'14:20',notes:'Active Apr–Jun (germination); then normal',        gph:1.0,mapSide:null,mapPos:null,mapId:'outdoor',ztype:'outdoor'},
+];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let zones = [], season = 'Spring', mapFilter = 'ALL', selectedMap = null, editingId = null, nextId = 100, activeMapId = 'greenhouse';
+
+
+// ═══════════════════════════════════════════════════════════
+// INLINE DIALOGS (Safari-safe replacements for prompt/confirm)
+// ═══════════════════════════════════════════════════════════
+function showInlineDialog({title='', msg='', input=false, placeholder='', defaultVal='', okText='OK', cancelText='Cancel', onOk, onCancel}) {
+  const overlay = document.getElementById('inline-dialog-overlay');
+  const titleEl = document.getElementById('idlg-title');
+  const msgEl   = document.getElementById('idlg-msg');
+  const inputEl = document.getElementById('idlg-input');
+  const okBtn   = document.getElementById('idlg-ok');
+  const cancelBtn = document.getElementById('idlg-cancel');
+
+  titleEl.textContent = title;
+  msgEl.textContent   = msg;
+  okBtn.textContent   = okText;
+  cancelBtn.textContent = cancelText;
+
+  if (input) {
+    inputEl.style.display = 'block';
+    inputEl.value = defaultVal || '';
+    inputEl.placeholder = placeholder || '';
+    cancelBtn.style.display = 'block';
+    setTimeout(() => inputEl.focus(), 80);
+  } else {
+    inputEl.style.display  = 'none';
+    cancelBtn.style.display = onCancel ? 'block' : 'none';
+  }
+
+  overlay.style.display = 'flex';
+
+  const cleanup = () => { overlay.style.display = 'none'; };
+
+  okBtn.onclick = () => {
+    cleanup();
+    if (onOk) onOk(input ? inputEl.value.trim() : true);
+  };
+  cancelBtn.onclick = () => {
+    cleanup();
+    if (onCancel) onCancel();
+  };
+  // Enter key submits
+  inputEl.onkeydown = e => { if (e.key === 'Enter') { cleanup(); if(onOk) onOk(inputEl.value.trim()); } };
+  // Tap outside closes (cancel)
+  overlay.onclick = e => { if (e.target === overlay) { cleanup(); if(onCancel) onCancel(); } };
+}
+
+// ═══════════════════════════════════════════════════════════
+// USER IDENTITY
+// ═══════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════
+// SECURITY: HTML SANITIZATION
+// ═══════════════════════════════════════════════════════════
+function esc(str) {
+  // Escape HTML special chars — prevents XSS in all innerHTML contexts
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;')
+    .replace(/'/g,  '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
+
+function escUrl(str) {
+  // For use in href/src attributes — reject javascript: and data: schemes
+  if (!str) return '';
+  const s = String(str).trim();
+  if (/^(javascript|data|vbscript):/i.test(s)) return '#';
+  return esc(s);
+}
+
+function getUserName() {
+  return localStorage.getItem('lovejoy_user') || 'User';
+}
+
+let _userPickerCallback = null;
+function _pickUser(name) {
+  localStorage.setItem('lovejoy_user', name);
+  document.getElementById('user-picker-overlay').style.display = 'none';
+  const badge = document.getElementById('user-badge');
+  if (badge) badge.textContent = '👤 ' + name;
+  if (_userPickerCallback) { _userPickerCallback(name); _userPickerCallback = null; }
+}
+function switchUser() { promptUserName(null, true); }
+function updateUserBadge() {
+  const badge = document.getElementById('user-badge');
+  if (badge) badge.textContent = '👤 ' + getUserName();
+}
+function promptUserName(callback, force) {
+  const existing = localStorage.getItem('lovejoy_user');
+  const allowed = ['Carol', 'Alex'];
+  if (!force && existing && allowed.map(n=>n.toLowerCase()).includes(existing.toLowerCase())) {
+    if (callback) callback(existing); return;
+  }
+  _userPickerCallback = callback || null;
+  let overlay = document.getElementById('user-picker-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'user-picker-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:16px;padding:32px 24px;max-width:300px;width:88%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+        <div style="font-family:serif;font-size:22px;font-weight:700;color:#3d2b1f;margin-bottom:6px;">Love Joy Farms</div>
+        <div style="font-size:14px;color:#888;margin-bottom:24px;">Who are you?</div>
+        <button onclick="_pickUser('Carol')" style="display:block;width:100%;margin-bottom:12px;padding:14px;border-radius:10px;border:2px solid #c8a96e;background:#fffdf8;font-size:17px;font-weight:600;cursor:pointer;color:#3d2b1f;">Carol</button>
+        <button onclick="_pickUser('Alex')" style="display:block;width:100%;padding:14px;border-radius:10px;border:2px solid #c8a96e;background:#fffdf8;font-size:17px;font-weight:600;cursor:pointer;color:#3d2b1f;">Alex</button>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════
+// FIREBASE REST SYNC  — no SDK, plain fetch()
+// ═══════════════════════════════════════════════════════════
+const SCHEMA_VERSION = 2;
+const LOCAL_KEY      = 'lovejoy_v2';
+const LEGACY_KEY     = 'lovejoy_v1';
+const CRASH_KEY      = 'lovejoy_crash';
+const FB_PROJECT     = 'lovejoy-farms';
+const FB_API_KEY     = 'AIzaSyBkc_mBKCAOic04qISupExhyuolZ3HhudY';
+const FB_DOC_URL     = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/farms/main`;
+const APP_SECRET     = 'ljf-2024-grass-valley-9x';
+
+let savePending  = null;
+let connectTimer = null;
+let firstSync    = true;
+let offlineMode  = false;
+let resetting    = false;
+let pollInterval = null;
+let connecting   = false;  // guard against concurrent doConnect calls
+
+// ── Firestore value encoders/decoders ────────────────────────────────────────
+function toFsValue(v) {
+  if (v === null || v === undefined) return {nullValue: null};
+  if (typeof v === 'boolean')        return {booleanValue: v};
+  if (typeof v === 'number')         return Number.isInteger(v) ? {integerValue: String(v)} : {doubleValue: v};
+  if (typeof v === 'string')         return {stringValue: v};
+  if (Array.isArray(v))              return {arrayValue: {values: v.map(toFsValue)}};
+  if (typeof v === 'object')         return {mapValue: {fields: Object.fromEntries(Object.entries(v).map(([k,val]) => [k, toFsValue(val)]))}};
+  return {stringValue: String(v)};
+}
+
+function fromFsValue(fv) {
+  if (!fv) return null;
+  if ('nullValue'    in fv) return null;
+  if ('booleanValue' in fv) return fv.booleanValue;
+  if ('integerValue' in fv) return Number(fv.integerValue);
+  if ('doubleValue'  in fv) return fv.doubleValue;
+  if ('stringValue'  in fv) return fv.stringValue;
+  if ('timestampValue' in fv) return fv.timestampValue;
+  if ('arrayValue'   in fv) return (fv.arrayValue.values || []).map(fromFsValue);
+  if ('mapValue'     in fv) return Object.fromEntries(Object.entries(fv.mapValue.fields || {}).map(([k,v]) => [k, fromFsValue(v)]));
+  return null;
+}
+
+function toFsDoc(obj) {
+  return {fields: Object.fromEntries(Object.entries(obj).map(([k,v]) => [k, toFsValue(v)]))};
+}
+
+function fromFsDoc(doc) {
+  if (!doc || !doc.fields) return null;
+  return Object.fromEntries(Object.entries(doc.fields).map(([k,v]) => [k, fromFsValue(v)]));
+}
+
+// ── Fetch with timeout ────────────────────────────────────────────────────────
+function fetchWithTimeout(url, opts, ms = 6000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal })
+    .finally(() => clearTimeout(timer));
+}
+
+// ── Read from Firestore ───────────────────────────────────────────────────────
+async function fbRead() {
+  const r = await fetchWithTimeout(`${FB_DOC_URL}?key=${FB_API_KEY}`, {mode:'cors',credentials:'omit'});
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const doc = await r.json();
+  return fromFsDoc(doc);
+}
+
+// ── Write to Firestore (PATCH = upsert) ───────────────────────────────────────
+async function fbWrite(data) {
+  const body = JSON.stringify(toFsDoc(data));
+  const r = await fetchWithTimeout(`${FB_DOC_URL}?key=${FB_API_KEY}`, {
+    method: 'PATCH',
+    mode: 'cors',
+    credentials: 'omit',
+    headers: {'Content-Type': 'application/json'},
+    body
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return await r.json();
+}
+
+// ── Launch sequence ───────────────────────────────────────────────────────────
+function initFirebase() {
+  loadLocal();
+  renderAll();
+  unlockApp();
+  promptUserName(() => updateUserBadge()); // prompt for name if not yet set; update header badge
+  updateUserBadge();
+  // Detect Claude sandbox (about: protocol = iframe sandbox, fetch blocked)
+  // Note: blob: is NOT treated as sandbox — Gmail/Edge open attachments as blob: URLs
+  const inSandbox = location.protocol === 'about:';
+  if (inSandbox) {
+    setDbStatus('sandbox');
+    return; // localStorage only — no cloud sync in sandbox
+  }
+  setDbStatus('connecting');
+  doConnect(readCrashFile());
+}
+
+async function doConnect(pendingCrash, attempt = 1) {
+  // Prevent concurrent connection attempts
+  if (attempt === 1) {
+    if (connecting) return;
+    connecting = true;
+  }
+  try {
+    const cloud = await fbRead();
+    clearTimeout(connectTimer);
+    if (!cloud) {
+      // Empty DB — seed with local/crash data
+      const seed = pendingCrash || buildPayload();
+      await fbWrite(seed);
+      clearCrashFile();
+      connecting = false;
+      setDbStatus('live', getUserName());
+      startPolling();
+      return;
+    }
+    const migrated = migrate(cloud);
+    lastCloudMs = migrated.lastUpdatedMs || 0; // anchor polling baseline to what we just read
+    if (firstSync) {
+      firstSync = false;
+      if (pendingCrash) {
+        await resolveCrashVsCloud(pendingCrash, migrated);
+      } else {
+        applyCloudData(migrated);
+      }
+    }
+    connecting = false;
+    setDbStatus('live', migrated.lastEditedBy);
+    startPolling();
+  } catch(e) {
+    console.warn(`[SYNC] connect failed (attempt ${attempt}):`, e.message || e);
+    if (attempt < 2) {
+      // One retry with short delay before declaring offline
+      await new Promise(r => setTimeout(r, 2000));
+      return doConnect(pendingCrash, attempt + 1);
+    }
+    connecting = false;
+    firstSync = false;
+    setDbStatus('offline');
+  }
+}
+
+// ── Polling (checks every 5s for changes from other devices) ─────────────────
+let lastCloudMs = 0;
+let pollFailCount = 0;
+
+// Single shared fetch-and-apply function used by polling, tab switches, and visibilitychange
+async function freshPoll() {
+  if (offlineMode || connecting || resetting) return;
+  try {
+    const cloud = await fbRead();
+    if (!cloud) return;
+    const cloudMs = cloud.lastUpdatedMs || 0;
+    if (cloudMs > lastCloudMs) {
+      lastCloudMs = cloudMs;
+      applyCloudData(migrate(cloud));
+    }
+  } catch(e) {}
+}
+
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollFailCount = 0;
+  pollInterval = setInterval(async () => {
+    if (savePending || offlineMode || resetting) return;
+    try {
+      const cloud = await fbRead();
+      pollFailCount = 0;
+      if (!cloud) return;
+      const cloudMs = cloud.lastUpdatedMs || 0;
+      if (cloudMs > lastCloudMs) {
+        lastCloudMs = cloudMs;
+        applyCloudData(migrate(cloud));
+      }
+    } catch(e) {
+      pollFailCount++;
+      console.warn(`[SYNC] poll failed (${pollFailCount}):`, e.message || e);
+      if (pollFailCount >= 2) {
+        pollFailCount = 0;
+        setDbStatus('offline');
+      }
+    }
+  }, 5000);
+}
+
+// ── Build payload ─────────────────────────────────────────────────────────────
+function buildPayload() {
+  const maxId = zones.reduce((m, z) => Math.max(m, z.id || 0), nextId);
+  nextId = Math.max(nextId, maxId + 1);
+  return {
+    zones, season, nextId,
+    schemaVersion:  SCHEMA_VERSION,
+    lastEditedBy:   getUserName(),
+    lastUpdatedMs:  Date.now(),
+    _token:         APP_SECRET
+  };
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════
+// RESET FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+function resetToDefaults() {
+  zones = DEFAULT_ZONES.map(z=>({...z})); nextId=100; season='Spring';
+  undoStack=[]; updateUndoBtn();
+  resetting=true;
+  if(savePending){clearTimeout(savePending);savePending=null;}
+  saveLocal({zones,season,nextId}); writeCrashFile({zones,season,nextId});
+  fbWrite(buildPayload()).then(()=>{clearCrashFile();setDbStatus('live',getUserName());resetting=false;}).catch(()=>{setDbStatus('offline');resetting=false;});
+  setTimeout(()=>{resetting=false;},5000);
+  renderAll();
+}
+
+function resetMapsOnly() {
+  pushUndo();
+  const defByName={};
+  DEFAULT_ZONES.forEach(z=>{defByName[z.name]={mapSide:z.mapSide,mapPos:z.mapPos,mapId:z.mapId,zoneW:null,zoneH:null};});
+  zones=zones.map(z=>{const def=defByName[z.name];return def?{...z,...def}:{...z,mapSide:null,mapPos:null,zoneW:null,zoneH:null};});
+  resetting=true;
+  if(savePending){clearTimeout(savePending);savePending=null;}
+  saveLocal({zones,season,nextId}); writeCrashFile({zones,season,nextId});
+  fbWrite(buildPayload()).then(()=>{clearCrashFile();setDbStatus('live',getUserName());resetting=false;}).catch(()=>{setDbStatus('offline');resetting=false;});
+  setTimeout(()=>{resetting=false;},5000);
+  renderAll();
+  if(document.getElementById('tab-map').classList.contains('active')){renderMapTabs();renderGroupFilters();renderMapPanel();}
+}
+
+
+// ── ID generation ────────────────────────────────────────────────────────────
+function newId() {
+  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+}
+
+// ── Undo stack ────────────────────────────────────────────────────────────────
+let undoStack = [];
+const MAX_UNDO = 20;
+
+function pushUndo() {
+  undoStack.push(JSON.parse(JSON.stringify(zones)));
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  updateUndoBtn();
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  zones = undoStack.pop();
+  updateUndoBtn();
+  save();
+  renderAll();
+}
+
+function updateUndoBtn() {
+  const btn = document.getElementById('undo-btn');
+  if (!btn) return;
+  btn.disabled = undoStack.length === 0;
+  btn.style.opacity = undoStack.length ? '1' : '0.4';
+}
+
+// Ctrl+Z / Cmd+Z
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    undo();
+  }
+  if (e.key === 'Escape') {
+    const mo = document.getElementById('modal-overlay');
+    if (mo && mo.classList.contains('open')) { e.preventDefault(); closeModal(); }
+  }
+});
+
+function save() {
+  const payload = buildPayload();
+  writeCrashFile(payload);
+  saveLocal(payload);
+  if (offlineMode) return;
+  setDbStatus('saving');
+  if (savePending) clearTimeout(savePending);
+  savePending = setTimeout(async () => {
+    savePending = null;
+    lastCloudMs = payload.lastUpdatedMs;
+    try {
+      await fbWrite(payload);
+      clearCrashFile();
+      setDbStatus('live', getUserName());
+    } catch(e) {
+      console.warn('[SYNC] save failed:', e.message || e);
+      // Don't immediately go offline — data is safe in localStorage/crash file.
+      // Retry once after 3s; only then mark offline.
+      await new Promise(r => setTimeout(r, 3000));
+      try {
+        await fbWrite(payload);
+        clearCrashFile();
+        setDbStatus('live', getUserName());
+      } catch(e2) {
+        console.warn('[SYNC] save retry failed:', e2.message || e2);
+        setDbStatus('offline');
+      }
+    }
+  }, 700);
+}
+
+// ── Manual reconnect ──────────────────────────────────────────────────────────
+async function manualConnect() {
+  offlineMode = false;
+  firstSync = true;
+  connecting = false; // force-clear so doConnect proceeds even if a previous attempt stalled
+  // setDbStatus('connecting') now keeps the reconnect button visible+disabled (see setDbStatus)
+  setDbStatus('connecting');
+  await doConnect(readCrashFile());
+  // doConnect sets final state: live → hides button, offline → re-enables button
+}
+
+function continueOffline() {
+  clearTimeout(connectTimer);
+  offlineMode = true; firstSync = false;
+  unlockApp(); setDbStatus('offline');
+  loadLocal(); renderAll();
+}
+
+// ── Local storage ─────────────────────────────────────────────────────────────
+function load() { loadLocal(); }
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY) || localStorage.getItem(LEGACY_KEY);
+    const d = raw ? JSON.parse(raw) : null;
+    if (d && d.zones) {
+      const m = migrate(d);
+      zones = m.zones; season = m.season || 'Spring'; nextId = m.nextId || 100;
+      return;
+    }
+  } catch(e) {}
+  zones = DEFAULT_ZONES.map(z => ({...z}));
+}
+function saveLocal(d) {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(d)); } catch(e) {}
+}
+
+// ── Crash file ────────────────────────────────────────────────────────────────
+function writeCrashFile(p) { try { localStorage.setItem(CRASH_KEY, JSON.stringify({...p, crashTime: Date.now(), deviceUser: getUserName()})); } catch(e) {} }
+function clearCrashFile()  { localStorage.removeItem(CRASH_KEY); }
+function readCrashFile()   { try { const r = localStorage.getItem(CRASH_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; } }
+
+// ── Crash resolution ──────────────────────────────────────────────────────────
+async function resolveCrashVsCloud(crash, cloud) {
+  if ((crash.crashTime||0) > (cloud.lastUpdatedMs||0)) {
+    showCrashBanner('Recovering unsaved changes…');
+    zones = crash.zones||zones; season = crash.season||season; nextId = crash.nextId||nextId;
+    // Write directly — no debounce, no setDbStatus side-effects
+    // doConnect sets the final status after we return
+    const payload = buildPayload();
+    writeCrashFile(payload);
+    saveLocal(payload);
+    try {
+      await fbWrite(payload);
+      clearCrashFile();
+    } catch(e) {
+      console.warn('[SYNC] crash recovery write failed:', e);
+      // silently swallow — doConnect's catch block will set offline if needed
+    }
+    hideCrashBanner('Changes recovered ✓');
+    renderAll();
+  } else {
+    clearCrashFile();
+    applyCloudData(cloud);
+  }
+}
+
+function applyCloudData(d) {
+  zones  = d.zones  || DEFAULT_ZONES.map(z=>({...z}));
+  season = d.season || 'Spring';
+  nextId = d.nextId || 100;
+  saveLocal(d);
+  setDbStatus('live', d.lastEditedBy);
+  renderAll();
+}
+
+// ── Schema migration ──────────────────────────────────────────────────────────
+function migrate(d) {
+  if (!d) return {zones: DEFAULT_ZONES.map(z=>({...z})), season:'Spring', nextId:100};
+  let out;
+  try { out = JSON.parse(JSON.stringify(d)); } catch(e) { return {zones: DEFAULT_ZONES.map(z=>({...z})), season:'Spring', nextId:100}; }
+  out.zones = (out.zones||[]).map(z => {
+    const base = {...z};
+    if (base.gph == null) base.gph = 1.0;
+    if (!base.mapId) base.mapId = (base.ztype&&base.ztype.startsWith('gh')) ? 'greenhouse' : 'outdoor';
+    if (base.mapSide === undefined) base.mapSide = null;
+    if (base.mapPos  === undefined) base.mapPos  = null;
+    if (!base.zoneW) base.zoneW = BW;
+    if (!base.zoneH) base.zoneH = (base.ztype==='gh-shallow') ? SH : DH;
+    return base;
+  });
+  out.schemaVersion = 2;
+  return out;
+}
+
+// ── Crash banner ──────────────────────────────────────────────────────────────
+function showCrashBanner(msg) {
+  let el = document.getElementById('crash-banner');
+  if (!el) { el=document.createElement('div'); el.id='crash-banner'; el.style.cssText='position:fixed;top:0;left:0;right:0;z-index:498;background:#fff8e1;border-bottom:2px solid #ffd54f;padding:8px 16px;font-size:12px;font-weight:700;color:#795548;text-align:center;font-family:Nunito,sans-serif'; document.body.prepend(el); }
+  el.textContent = '⚠ ' + msg; el.style.display = 'block';
+}
+function hideCrashBanner(msg) {
+  const el = document.getElementById('crash-banner'); if(!el) return;
+  el.style.background='#e8f5e9'; el.style.borderColor='#81c784'; el.style.color='#2e7d32';
+  el.textContent = '✓ ' + msg;
+  setTimeout(() => { if(el) el.style.display='none'; }, 3500);
+}
+
+// ── Online/offline ────────────────────────────────────────────────────────────
+window.addEventListener('online',  () => { if (!offlineMode) { connecting=false; firstSync=true; setDbStatus('connecting'); doConnect(readCrashFile()); } });
+window.addEventListener('offline', () => setDbStatus('offline'));
+// Immediately sync when app comes back to foreground (iOS background → foreground)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') freshPoll();
+});
+window.addEventListener('beforeunload', () => { if (savePending) { clearTimeout(savePending); if (!offlineMode) fbWrite(buildPayload()).then(()=>clearCrashFile()).catch(()=>{}); } });
+
+// ── DEV helpers ───────────────────────────────────────────────────────────────
+function devPushDefaults(){ fbWrite({zones:DEFAULT_ZONES.map(z=>({...z})),season:'Spring',nextId:100,schemaVersion:2,lastEditedBy:getUserName(),lastUpdatedMs:Date.now(),_token:APP_SECRET}).then(()=>devStatus('dev-fb-status','Defaults pushed')).catch(e=>devStatus('dev-fb-status','Failed: '+e.message,true)); }
+
+
+function setDbStatus(state, editor) {
+  if (state === 'offline') console.warn('[SYNC] offline:', new Error().stack.split('\n')[2]?.trim());
+  const rb = document.getElementById('reconnect-btn');
+  if (rb) {
+    const rbVisible = rb.style.display !== 'none';
+    if (state === 'offline') {
+      // Show reconnect, ready to click
+      rb.style.display = '';
+      rb.textContent = '⟳ Reconnect';
+      rb.disabled = false;
+    } else if (state === 'connecting' && rbVisible) {
+      // Button was already showing (user clicked it) — keep visible but show progress
+      rb.textContent = '◌ Connecting…';
+      rb.disabled = true;
+    } else if (state !== 'connecting') {
+      // live / saving / sandbox → hide the button
+      rb.style.display = 'none';
+      rb.disabled = false;
+    }
+    // state === 'connecting' and button was already hidden → leave hidden (startup)
+  }
+  const el = document.getElementById('db-status');
+  if (!el) return;
+  const cfg = {
+    live:       { icon:'●', color:'#2e7d32' },
+    saving:     { icon:'↑', color:'#f57c00' },
+    offline:    { icon:'○', color:'#9e9e9e' },
+    connecting: { icon:'◌', color:'#66bb6a' },
+    sandbox:    { icon:'◎', color:'#9e9e9e' },
+  }[state] || { icon:'○', color:'#9e9e9e' };
+  el.textContent = state==='live' && editor ? cfg.icon+' Live · '+editor
+    : state==='saving'   ? cfg.icon+' Saving…'
+    : state==='offline'  ? cfg.icon+' Offline'
+    : state==='sandbox'  ? '◎ Local only'
+    : cfg.icon+' Connecting';
+  el.style.color = cfg.color;
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════
+function t2m(t) {
+  if(!t||!t.includes(':')) return -1;
+  const [h,m] = t.split(':').map(Number);
+  return h*60+m;
+}
+function m2t(m) {
+  const h=Math.floor(m/60), mn=m%60;
+  return String(h).padStart(2,'0')+':'+String(mn).padStart(2,'0');
+}
+function calcEnd(start, dur) {
+  const sm = t2m(start);
+  if(sm<0) return '';
+  return m2t(sm + parseInt(dur));
+}
+function groupLetters(g) {
+  if(!g) return [];
+  return g.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
+}
+function sharesGroup(g1, g2) {
+  if(g1==='ALL'||g2==='ALL') return true;
+  const a=groupLetters(g1), b=groupLetters(g2);
+  return a.some(x=>b.includes(x));
+}
+function isInSeason(z) {
+  const n = (z.notes||'').toLowerCase();
+  if(season==='Winter') {
+    if(n.includes('paused dec')) return false;
+    if(n.includes('apr–oct')||n.includes('may–sep')||n.includes('apr–jun')) return false;
+  }
+  if(season==='Fall') {
+    if(n.includes('may–sep')||n.includes('apr–jun')) return false;
+  }
+  if(season==='Spring') {
+    if(n.includes('may–sep')) return false;
+  }
+  return true;
+}
+function groupBadge(g) {
+  if(!g) return '';
+  const parts = groupLetters(g);
+  if(g.toUpperCase()==='ALL') return '<span class="badge badge-all">ALL</span>';
+  return parts.map(p=>{
+    const cls={'A':'badge-a','B':'badge-b','C':'badge-c','D':'badge-d','E':'badge-e','F':'badge-f'}[p]||'badge-all';
+    return `<span class="badge ${cls}">${p}</span>`;
+  }).join(' ');
+}
+
+// ═══════════════════════════════════════════════════════════
+// VALIDATION
+// ═══════════════════════════════════════════════════════════
+function validate() {
+  const errs = {}; // id -> {dupName, overlap, endBefore}
+  function addErr(id, type) { errs[id]=errs[id]||{}; errs[id][type]=true; }
+
+  // Duplicate names
+  const nameCt = {};
+  zones.forEach(z=>{ nameCt[z.name]=(nameCt[z.name]||0)+1; });
+  zones.forEach(z=>{ if(nameCt[z.name]>1) addErr(z.id,'dupName'); });
+
+  // End before start
+  zones.forEach(z=>{
+    if(z.start&&z.end&&t2m(z.end)<=t2m(z.start)) addErr(z.id,'endBefore');
+  });
+
+  // Overlaps
+  for(let i=0;i<zones.length;i++) {
+    const zi=zones[i];
+    if(!zi.start||!zi.end) continue;
+    const s1=t2m(zi.start), e1=t2m(zi.end);
+    for(let j=i+1;j<zones.length;j++) {
+      const zj=zones[j];
+      if(!zj.start||!zj.end) continue;
+      const s2=t2m(zj.start), e2=t2m(zj.end);
+      if(s1>=e2||s2>=e1) continue; // no time overlap
+      if(sharesGroup(zi.group,zj.group)) continue; // groups allow it
+      addErr(zi.id,'overlap'); addErr(zj.id,'overlap');
+    }
+  }
+  return errs;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER SCHEDULE
+// ═══════════════════════════════════════════════════════════
+function renderSchedule() {
+  const errs = validate();
+  const errCount = Object.keys(errs).length;
+
+  // Validation banner
+  const banner = document.getElementById('val-banner');
+  if(errCount>0) {
+    banner.textContent = `⚠ ${errCount} zone${errCount>1?'s have':' has'} validation errors — check red/orange highlights below`;
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+
+  // Stats
+  const total = zones.length;
+  const totalDur = zones.reduce((a,z)=>a+(z.dur||0),0);
+  const avgDur = total ? Math.round(totalDur/total) : 0;
+  const ghZones = zones.filter(z=>z.ztype&&z.ztype.startsWith('gh'));
+  const ghDur = ghZones.reduce((a,z)=>a+(z.dur||0),0);
+  document.getElementById('stats-bar').innerHTML = [
+    {val:total,       label:'Total Zones'},
+    {val:(()=>{const h=Math.floor(totalDur/60),m=totalDur%60;return h>0?h+'h '+m+'m':m+'m';})(),label:'Total Duration'},
+    {val:avgDur+'m', label:'Avg Duration'},
+    {val:ghZones.length,label:'GH Zones'},
+    {val:ghDur+'m',   label:'GH Duration'},
+    {val:errCount,    label:'Errors'},
+  ].map(s=>`<div class="stat"><div class="stat-val" style="${s.label==='Errors'&&s.val>0?'color:#c0394a':''}">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+
+  // Table rows
+  const tbody = document.getElementById('sched-body');
+  if(!zones.length) { tbody.innerHTML='<tr class="empty-row"><td colspan="10">No zones yet. Click + Add Zone.</td></tr>'; return; }
+
+  tbody.innerHTML = zones.map((z,i)=>{
+    const e = errs[z.id]||{};
+    const hasErr = Object.keys(e).length>0;
+    const dimmed = !isInSeason(z);
+    const isGh = z.ztype&&z.ztype.startsWith('gh');
+    const rowClass = [hasErr?'has-error':'', dimmed?'dimmed':'', isGh?'gh-row':''].filter(Boolean).join(' ');
+    const nameErr = e.dupName ? ' err-dupname' : '';
+    const startErr = e.overlap ? ' err-overlap' : '';
+    const endErr = e.endBefore ? ' err-endtime' : e.overlap ? ' err-overlap' : '';
+    const errTip = e.dupName?'⚠':e.overlap?'⚠':e.endBefore?'!':'';
+    const _grpLetter = (z.group||'').trim().toUpperCase().split(',')[0].trim();
+    const _grpColors = {A:'#e53935',B:'#fb8c00',C:'#f9a825',D:'#43a047',E:'#1e88e5',F:'#8e24aa'};
+    const _grpBorder = _grpColors[_grpLetter] ? `border-left:4px solid ${_grpColors[_grpLetter]};` : 'border-left:4px solid transparent;';
+    return `<tr class="${rowClass}" style="${_grpBorder}" ondblclick="openModal(${z.id})" title="Double-click to edit">
+      <td class="num">${i+1}</td>
+      <td class="${nameErr}">${esc(z.name)||''}${errTip&&e.dupName?'<span class="err-icon">⚠</span>':''}</td>
+      <td>${groupBadge(esc(z.group))}</td>\n      <td><span style="font-size:9px;color:var(--muted)">${mapLabel(z.mapId||'outdoor')}</span></td>
+      <td style="text-align:center">${z.dur||''}m</td>
+      <td>${z.freq||''}</td>
+      <td>${z.days||''}</td>
+      <td class="${startErr}">${z.start||''}${e.overlap?'<span class="err-icon">⚠</span>':''}</td>
+      <td class="${endErr}">${z.end||''}${e.endBefore?'<span class="warn-icon">!</span>':e.overlap?'<span class="err-icon">⚠</span>':''}</td>
+      <td style="color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(z.notes||'').replace(/"/g,'&quot;')}">${esc(z.notes)||''}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openModal(${z.id});event.stopPropagation()">Edit</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER MAP
+// ═══════════════════════════════════════════════════════════
+
+
+
+
+// ═══════════════════════════════════════════════════════════
+// CONNECTION UI
+// ═══════════════════════════════════════════════════════════
+function setConnectMsg(msg) {
+  const el = document.getElementById('connect-status-msg');
+  if (el) el.textContent = msg;
+}
+
+function showConnectBtn(msg) {
+  setConnectMsg(msg);
+  const spinner = document.getElementById('connect-spinner');
+  if (spinner) spinner.style.display = 'none';
+  const btn = document.getElementById('connect-btn');
+  if (btn) btn.style.display = 'inline-block';
+  const offOpt = document.getElementById('connect-offline-opt');
+  if (offOpt) offOpt.style.display = 'block';
+}
+
+function unlockApp() {
+  // Save name from connect overlay input if filled
+  const ni = document.getElementById('connect-name-input');
+  if (ni && ni.value.trim()) localStorage.setItem('lovejoy_user', ni.value.trim());
+  const overlay = document.getElementById('connect-overlay');
+  if (overlay) overlay.classList.add('hidden');
+  const content = document.getElementById('app-content');
+  if (content) {
+    content.style.pointerEvents = '';
+    content.style.opacity = '1';
+    content.style.userSelect = '';
+    content.style.position = '';
+  }
+  // reconnect-btn visibility is managed exclusively by setDbStatus()
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAP MANAGEMENT HELPERS
+// ═══════════════════════════════════════════════════════════
+function getUniqueMaps() {
+  const seen = new Set();
+  const maps = [];
+  zones.forEach(z => {
+    const mid = z.mapId || 'outdoor';
+    if (!seen.has(mid)) { seen.add(mid); maps.push(mid); }
+  });
+  if (!seen.has('greenhouse')) maps.unshift('greenhouse');
+  if (!seen.has('outdoor'))    maps.push('outdoor');
+  return maps;
+}
+
+function mapLabel(mapId) {
+  const labels = { 'greenhouse': 'Greenhouse', 'outdoor': 'Outdoor' };
+  return labels[mapId] || mapId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+function refreshMapSelect() {
+  const sel = document.getElementById('f-mapid');
+  if (!sel) return;
+  const maps = getUniqueMaps();
+  const cur  = sel.value;
+  sel.innerHTML = maps.map(m => `<option value="${esc(m)}">${esc(mapLabel(m))}</option>`).join('');
+  sel.innerHTML += `<option value="__new__">+ New map…</option>`;
+  if (cur && maps.includes(cur)) sel.value = cur;
+  sel.onchange = () => {
+    if (sel.value === '__new__') {
+      showInlineDialog({
+        title: 'New Map',
+        msg: 'Enter a name for the new map (e.g. "Back Yard"):',
+        input: true, placeholder: 'Map name', okText: 'Create',
+        onOk: (name) => {
+          if (!name) { sel.value = maps[0]; return; }
+          const newMapId = name.trim().toLowerCase().replace(/\s+/g, '-');
+          const allMaps  = getUniqueMaps().concat([newMapId]);
+          sel.innerHTML  = allMaps.map(m => `<option value="${m}">${mapLabel(m)}</option>`).join('')
+                         + `<option value="__new__">+ New map…</option>`;
+          sel.value = newMapId;
+          renderMapTabs();
+        },
+        onCancel: () => { sel.value = maps[0]; }
+      });
+    }
+    renderMapTabs();
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// DYNAMIC GROUP FILTERS
+// ═══════════════════════════════════════════════════════════
+function renderGroupFilters() {
+  const container = document.getElementById('map-filter-group');
+  if (!container) return;
+  const groupSet = new Set();
+  zones.forEach(z => {
+    if (!z.group || z.group.toUpperCase() === 'ALL') return;
+    z.group.split(',').map(g => g.trim().toUpperCase()).filter(Boolean).forEach(g => groupSet.add(g));
+  });
+  const groups = ['ALL', ...Array.from(groupSet).sort()];
+  container.querySelectorAll('.seg-btn').forEach(b => b.remove());
+  groups.forEach((g, i) => {
+    const btn = document.createElement('button');
+    btn.className   = 'seg-btn' + (mapFilter === g ? ' active' : '');
+    btn.textContent = g === 'ALL' ? 'All' : 'Group ' + g;
+    btn.style.borderRadius = i === 0 ? '14px 0 0 14px' : i === groups.length - 1 ? '0 14px 14px 0' : '0';
+    btn.onclick = () => setMapFilter(btn, g);
+    container.appendChild(btn);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAP LAYOUT CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const GW    = 320;   // SVG width
+const GH_SVG= 560;   // SVG height
+const BW    = 70;    // bed width
+const DH    = 85;    // deep bed height
+const SH    = 50;    // shallow bed height
+const SLOT  = 95;    // vertical slot spacing
+const TPAD  = 20;    // top padding
+const WPAD  = 10;    // wall padding
+function mapY(pos) { return TPAD + pos * SLOT; }
+
+// ═══════════════════════════════════════════════════════════
+// MULTI-MAP RENDERING
+// ═══════════════════════════════════════════════════════════
+function renderMapTabs() {
+  const maps = getUniqueMaps();
+  if (!maps.includes(activeMapId)) activeMapId = maps[0];
+
+  // ── Tab buttons ──
+  const tabGroup = document.getElementById('map-tab-group');
+  if (tabGroup) {
+    tabGroup.querySelectorAll('.seg-btn').forEach(b => b.remove());
+    maps.forEach((mid, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'seg-btn' + (activeMapId === mid ? ' active' : '');
+      btn.textContent = mapLabel(mid);
+      btn.style.borderRadius = i===0?'14px 0 0 14px':i===maps.length-1?'0 14px 14px 0':'0';
+      btn.onclick = () => { activeMapId=mid; selectedMap=null; renderMapTabs(); renderGroupFilters(); renderMapPanel(); };
+      tabGroup.appendChild(btn);
+    });
+  }
+
+  const container = document.getElementById('map-containers');
+  if (!container) return;
+
+  // All zones on this map
+  const mapZones = zones.filter(z => (z.mapId||'outdoor') === activeMapId);
+  // Auto-assign positions for unpositioned zones
+  const positioned = autoPosition(mapZones);
+  // Apply group filter
+  const visible = positioned.filter(z => mapFilter==='ALL' || groupLetters(z.group).includes(mapFilter));
+
+  container.innerHTML = `
+    <div class="map-layout">
+      <div class="map-wrap">
+        <div class="compass top">▲ NORTH END</div>
+        <svg id="active-map-svg" viewBox="0 0 320 560" width="320" height="560"
+          style="display:block;background:#f2faf2;border-radius:8px;width:100%;max-width:380px;height:auto;touch-action:none;user-select:none"></svg>
+        <div class="compass bottom">▼ SOUTH ENTRANCE</div>
+        <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;font-style:italic">Drag zones to reposition · tap to select</div>
+        <div class="map-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#5a9e5f"></div>Left wall</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#66bb6a"></div>Right wall</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#e74c3c"></div>Error</div>
+          <div class="legend-item" style="color:var(--muted);font-size:9px">${mapZones.length} zone(s) · click to select · edit to reposition</div>
+        </div>
+      </div>
+      <div class="map-panel" id="map-panel"></div>
+    </div>`;
+
+  renderActiveSvg(visible, activeMapId);
+  renderMapPanel();
+  // Prevent browser zoom on SVG element
+  const svgEl = document.getElementById('active-map-svg');
+  if (svgEl) {
+    svgEl.addEventListener('wheel', e => e.preventDefault(), {passive:false});
+    svgEl.addEventListener('dblclick', e => e.preventDefault());
+    svgEl.onclick = e => e.stopPropagation();
+  }
+}
+
+// Auto-assign visual positions for zones that lack mapSide/mapPos
+function autoPosition(mapZones) {
+  const leftSlots = {}, rightSlots = {}, topSlots = {}, bottomSlots = {}, centerSlots = {};
+  const result = [];
+
+  // First pass: collect explicitly positioned zones
+  mapZones.forEach(z => {
+    if (z.mapSide && z.mapPos != null) {
+      const bucket = {left:leftSlots,right:rightSlots,top:topSlots,bottom:bottomSlots,center:centerSlots}[z.mapSide];
+      if (bucket) bucket[z.mapPos] = true;
+    }
+  });
+
+  // Second pass: auto-assign unpositioned zones
+  const autoCounters = {left:0, right:0, top:0, bottom:0, center:0};
+
+  mapZones.forEach(z => {
+    if (z.mapSide && z.mapPos != null) {
+      result.push({...z});
+      return;
+    }
+    // Auto-place: alternate left/right
+    const idx = result.filter(r => !r._autoPlaced).length;
+    const side = (result.length % 2 === 0) ? 'left' : 'right';
+    const bucket = side === 'left' ? leftSlots : rightSlots;
+    let slot = autoCounters[side];
+    while (bucket[slot]) slot++;
+    autoCounters[side] = slot + 1;
+    result.push({...z, mapSide: z.mapSide || side, mapPos: z.mapPos != null ? z.mapPos : slot, _autoPlaced: !z.mapSide});
+  });
+
+  return result;
+}
+
+function renderActiveSvg(zoneList, mapId) {
+  const svg = document.getElementById('active-map-svg');
+  if (!svg) return;
+  const errs = validate();
+  const ns = 'http://www.w3.org/2000/svg';
+  svg.innerHTML = '';
+
+  // ── Compute dynamic SVG dimensions from zone layout ─────────────────────
+  let svgW = GW, svgH = GH_SVG;
+  zoneList.forEach(z => {
+    const side = z.mapSide || 'left';
+    const pos  = z.mapPos  != null ? z.mapPos : 0;
+    const bw   = z.zoneW || BW;
+    const bh   = z.zoneH || (z.ztype === 'gh-shallow' ? SH : DH);
+    if (side === 'top' || side === 'bottom') {
+      // Horizontal: may need wider SVG
+      const neededW = WPAD + (pos + 1) * (bw + 6);
+      if (neededW > svgW) svgW = neededW + WPAD;
+    } else {
+      // Vertical: may need taller SVG
+      const neededH = TPAD + (pos + 1) * (bh + 8) + TPAD;
+      if (neededH > svgH) svgH = neededH;
+    }
+  });
+  // Update viewBox and height to match content
+  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+  svg.style.maxWidth = svgW > GW ? `${Math.round(svgW * 1.2)}px` : '380px';
+
+  const el=(tag,a,par)=>{const e=document.createElementNS(ns,tag);Object.entries(a).forEach(([k,v])=>e.setAttribute(k,v));(par||svg).appendChild(e);return e;};
+  const tx=(t,a,par)=>{const e=el('text',a,par);e.textContent=t;return e;};
+
+  // ── Background ────────────────────────────────────────────────────────────
+  el('rect',{x:0,y:0,width:svgW,height:svgH,rx:10,fill:'rgba(125,158,128,0.04)',stroke:'rgba(125,158,128,0.4)','stroke-width':1.5});
+  for(let yg=90;yg<svgH;yg+=95) el('line',{x1:0,y1:yg,x2:svgW,y2:yg,stroke:'rgba(125,158,128,0.07)','stroke-dasharray':'3 3','stroke-width':1});
+
+  // ── Drop-zone guides (visual snapping rails) ──────────────────────────────
+  // Left rail
+  el('rect',{x:WPAD-2,y:TPAD,width:BW+4,height:svgH-TPAD*2,rx:4,fill:'rgba(90,158,95,0.04)',stroke:'rgba(90,158,95,0.12)','stroke-width':1,'stroke-dasharray':'2 4'});
+  // Right rail
+  el('rect',{x:svgW-WPAD-BW-2,y:TPAD,width:BW+4,height:svgH-TPAD*2,rx:4,fill:'rgba(102,187,106,0.04)',stroke:'rgba(102,187,106,0.12)','stroke-width':1,'stroke-dasharray':'2 4'});
+  // Centre rail
+  el('rect',{x:svgW/2-BW/2-2,y:TPAD,width:BW+4,height:svgH-TPAD*2,rx:4,fill:'rgba(255,138,101,0.03)',stroke:'rgba(255,138,101,0.08)','stroke-width':1,'stroke-dasharray':'2 4'});
+
+  // ── Map-specific fixtures ─────────────────────────────────────────────────
+  if (mapId === 'greenhouse') {
+    el('rect',{x:svgW/2-38,y:0,width:76,height:svgH,fill:'rgba(196,170,130,0.07)',stroke:'rgba(196,170,130,0.13)','stroke-width':1});
+    const pt=el('text',{'font-size':7,fill:'rgba(196,170,130,0.3)','font-family':'monospace','letter-spacing':4,'text-anchor':'middle',transform:`rotate(-90,${GW/2},${GH_SVG/2})`});
+    pt.setAttribute('x',svgW/2);pt.setAttribute('y',svgH/2+4);pt.textContent='PATH';
+    el('rect',{x:svgW/2-18,y:195,width:36,height:40,rx:18,fill:'none',stroke:'rgba(180,140,90,0.4)','stroke-width':1.5});
+    tx('ARCH',{x:svgW/2,y:222,'text-anchor':'middle','font-size':7,fill:'rgba(180,140,90,0.5)','font-family':'monospace'});
+    el('circle',{cx:svgW/2,cy:svgH-32,r:18,fill:'none',stroke:'rgba(120,150,200,0.35)','stroke-width':1.5});
+    tx('FAN',{x:svgW/2,y:svgH-28,'text-anchor':'middle','font-size':7,fill:'rgba(120,150,200,0.5)','font-family':'monospace'});
+    el('ellipse',{cx:svgW/2,cy:svgH-100,rx:22,ry:13,fill:'none',stroke:'rgba(125,158,128,0.3)','stroke-width':1.5,'stroke-dasharray':'3 2'});
+  } else if (mapId === 'outdoor') {
+    el('rect',{x:GW/2-30,y:10,width:60,height:40,rx:4,fill:'none',stroke:'rgba(180,140,90,0.22)','stroke-width':1.5,'stroke-dasharray':'4 3'});
+    tx('HOUSE',{x:GW/2,y:38,'text-anchor':'middle','font-size':7,fill:'rgba(180,140,90,0.38)','font-family':'monospace'});
+  } else {
+    tx(mapLabel(mapId).toUpperCase(),{x:GW/2,y:28,'text-anchor':'middle','font-size':9,fill:'rgba(125,158,128,0.28)','font-family':'monospace','letter-spacing':3});
+  }
+
+  // Wall labels
+  tx('◀ WEST',{x:6,y:svgH-10,'font-size':7,fill:'rgba(125,158,128,0.4)','font-family':'monospace'});
+  tx('EAST ▶',{x:svgW-6,y:svgH-10,'text-anchor':'end','font-size':7,fill:'rgba(125,158,128,0.4)','font-family':'monospace'});
+
+  if (!zoneList.length) {
+    tx('No zones on this map yet',{x:svgW/2,y:svgH/2-22,'text-anchor':'middle','font-size':13,fill:'#5a9e5f','font-family':'monospace','font-weight':'bold'});
+    tx('Edit a zone → Map → select this map',{x:svgW/2,y:svgH/2+4,'text-anchor':'middle','font-size':10,fill:'#7aaa7e','font-family':'monospace'});
+    tx('Then drag it into position',{x:svgW/2,y:svgH/2+22,'text-anchor':'middle','font-size':9,fill:'#9ecf9e','font-family':'monospace'});
+    // Draw a helpful arrow hint
+    el('circle',{cx:svgW/2,cy:svgH/2-50,r:18,fill:'rgba(90,158,95,0.12)',stroke:'rgba(90,158,95,0.3)','stroke-width':1.5});
+    tx('+',{x:svgW/2,y:svgH/2-43,'text-anchor':'middle','font-size':20,fill:'rgba(90,158,95,0.5)','font-family':'monospace'});
+    return;
+  }
+
+  // ── SVG coordinate helper ─────────────────────────────────────────────────
+  function svgPt(clientX, clientY) {
+    const r   = svg.getBoundingClientRect();
+    const vb  = svg.viewBox.baseVal;
+    const vbW = vb && vb.width  ? vb.width  : GW;
+    const vbH = vb && vb.height ? vb.height : GH_SVG;
+    return {
+      x: (clientX - r.left) * (vbW / r.width),
+      y: (clientY - r.top)  * (vbH / r.height)
+    };
+  }
+
+  // ── Snap drop position to side + slot ─────────────────────────────────────
+  // ── Collision detection helpers ────────────────────────────────────────────
+    // Returns true if (side, pos) is occupied by another zone
+    // Uses ALL zones on this map, not just the visible filtered list
+    const allMapZones = zones.filter(zn => (zn.mapId||'outdoor') === activeMapId);
+    function normSide(s) { return (s === 'centre' || s === 'center') ? 'center' : (s || 'left'); }
+    function slotOccupied(side, pos, excludeId) {
+      const ns = normSide(side);
+      return allMapZones.some(zn => zn.id !== excludeId && normSide(zn.mapSide) === ns && zn.mapPos === pos);
+    }
+
+    // Find nearest free slot on a given side, searching outward from preferred pos
+    // Max 1 unit away — zones won't be placed more than 1 slot from the drop target
+    function nearestFreeSlot(side, preferredPos, excludeId) {
+      const maxSlots = 1;
+      for (let delta = 0; delta <= maxSlots; delta++) {
+        for (const d of [delta, -delta]) {
+          if (d === delta && delta !== 0) continue; // avoid duplicate when delta=0
+          const p = preferredPos + d;
+          if (p < 0) continue;
+          if (!slotOccupied(side, p, excludeId)) return p;
+        }
+        // try both directions for delta > 0
+        if (delta > 0) {
+          const pUp = preferredPos + delta;
+          const pDn = preferredPos - delta;
+          if (pDn >= 0 && !slotOccupied(side, pDn, excludeId)) return pDn;
+          if (!slotOccupied(side, pUp, excludeId)) return pUp;
+        }
+      }
+      return null; // no free slot found
+    }
+
+    function snapToGrid(px, py, bw2, bh2) {
+      // Use actual SVG dimensions from viewBox
+      const vb    = svg.viewBox.baseVal;
+      const aW    = vb && vb.width  ? vb.width  : GW;
+      const aH    = vb && vb.height ? vb.height : GH_SVG;
+      const slotH = bh2 + 8;  // match renderActiveSvg position formula
+
+      const leftX   = WPAD;
+      const rightX  = aW - WPAD - bw2;
+      const centreX = aW/2 - bw2/2;
+      const dLeft   = Math.abs(px - leftX);
+      const dRight  = Math.abs(px - rightX);
+      const dCentre = Math.abs(px - centreX);
+
+      let side;
+      if (py < TPAD + bh2/2) {
+        side = 'top';
+        const slotX = Math.max(0, Math.round((px - WPAD) / (bw2 + 6)));
+        return { side, pos: slotX, x: WPAD + slotX*(bw2+6), y: TPAD };
+      }
+      if (py > aH - bh2 - TPAD) {
+        side = 'bottom';
+        const slotX = Math.max(0, Math.round((px - WPAD) / (bw2 + 6)));
+        return { side, pos: slotX, x: WPAD + slotX*(bw2+6), y: aH - bh2 - TPAD };
+      }
+      if (dLeft <= dRight && dLeft <= dCentre)  side = 'left';
+      else if (dRight <= dCentre)                side = 'right';
+      else                                        side = 'centre';
+
+      const preferredPos = Math.max(0, Math.round((py - TPAD) / slotH));
+      const snapX = side==='left'?leftX : side==='right'?rightX : centreX;
+      const snapY = TPAD + preferredPos * slotH;
+      return { side, pos: preferredPos, x: snapX, y: snapY };
+    }
+
+  // ── Colour palette by side ────────────────────────────────────────────────
+  const sideColors = {
+    left:   {base:'#5a9e5f', light:'#d4ecd5'},
+    right:  {base:'#66bb6a', light:'#c8e6ca'},
+    top:    {base:'#4db6ac', light:'#b2dfdb'},
+    bottom: {base:'#7986cb', light:'#c5cae9'},
+    centre: {base:'#ff8a65', light:'#ffe0b2'},
+    center: {base:'#ff8a65', light:'#ffe0b2'},
+  };
+
+  // ── Drop indicator element ────────────────────────────────────────────────
+  const dropIndicator = el('rect',{x:0,y:0,width:BW,height:DH,rx:4,
+    fill:'rgba(90,158,95,0.15)',stroke:'#5a9e5f','stroke-width':2,
+    'stroke-dasharray':'6 3',opacity:0,pointerEvents:'none'});
+
+  // ── Draw each zone ────────────────────────────────────────────────────────
+  zoneList.forEach(z => {
+    const erz  = !!(errs[z.id] && Object.keys(errs[z.id]).length);
+    const side = z.mapSide || 'left';
+    const pos  = z.mapPos  != null ? z.mapPos : 0;
+    const bw   = z.zoneW || BW;   // per-zone width
+    const bh   = z.zoneH || (z.ztype === 'gh-shallow' ? SH : DH); // per-zone height
+
+    let x, y;
+    if      (side==='left')   { x=WPAD;                    y=TPAD+pos*(bh+8); }
+    else if (side==='right')  { x=svgW-WPAD-bw;            y=TPAD+pos*(bh+8); }
+    else if (side==='top')    { x=WPAD+pos*(bw+6);         y=TPAD; }
+    else if (side==='bottom') { x=WPAD+pos*(bw+6);         y=svgH-bh-TPAD; }
+    else                      { x=svgW/2-bw/2;             y=TPAD+pos*(bh+8); }
+
+    const isSel    = selectedMap===z.id;
+    const colPair  = erz ? {base:'#c0392b',light:'#f5b7b1'} : (sideColors[side]||sideColors.left);
+    const fill     = isSel ? colPair.base : colPair.light;
+
+    const g = el('g',{cursor:'grab'});
+    const rect = el('rect',{x,y,width:BW,height:bh,rx:4,fill,stroke:colPair.base,
+      'stroke-width':isSel?2.5:1.5,
+      'stroke-dasharray': z._autoPlaced?'4 2':'none',
+      style:'transition:filter 0.1s'},g);
+
+    const dispName = z.name.length>12 ? z.name.slice(0,11)+'…' : z.name;
+    const lc = isSel?'#fff':colPair.base;
+    const nameEl = tx(dispName,{x:x+BW/2,y:y+bh/2-5,'text-anchor':'middle',
+      'font-size':9,'font-weight':700,'font-family':"'Courier New',monospace",'pointer-events':'none',fill:lc},g);
+    const timeEl = tx(z.start,{x:x+BW/2,y:y+bh/2+8,'text-anchor':'middle',
+      'font-size':7.5,'font-family':'monospace','pointer-events':'none',
+      fill:isSel?'rgba(255,255,255,0.75)':'#666'},g);
+
+    if (z.group) {
+      el('rect',{x:x+BW-17,y:y+4,width:13,height:13,rx:6.5,
+        fill:colPair.base,stroke:'#fff','stroke-width':1,'pointer-events':'none'},g);
+      tx(z.group.split(',')[0],{x:x+BW-10.5,y:y+13.5,'text-anchor':'middle',
+        'font-size':7.5,'font-weight':800,'font-family':'monospace','pointer-events':'none',fill:'#fff'},g);
+    }
+    if (z._autoPlaced) tx('auto',{x:x+4,y:y+bh-5,'font-size':6,'pointer-events':'none',fill:'rgba(0,0,0,0.3)','font-family':'monospace'},g);
+    if (erz) {
+      el('circle',{cx:x+4,cy:y+4,r:5,fill:'#e74c3c','pointer-events':'none'},g);
+      tx('!',{x:x+4,y:y+7.5,'text-anchor':'middle','font-size':7,'font-weight':900,'pointer-events':'none',fill:'#fff'},g);
+    }
+
+    // ── DRAG & DROP ───────────────────────────────────────────────────────
+    let dragging=false, startPt=null, origX=x, origY=y, dragOffX=0, dragOffY=0;
+
+    function startDrag(cx, cy) {
+      const pt = svgPt(cx, cy);
+      dragging = true;
+      startPt  = pt;
+      dragOffX = pt.x - x;
+      dragOffY = pt.y - y;
+      g.setAttribute('cursor','grabbing');
+      rect.setAttribute('opacity','0.85');
+      rect.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.25))';
+      svg.appendChild(g); // bring to front
+      svg.appendChild(dropIndicator);
+    }
+
+    function moveDrag(cx, cy) {
+      if (!dragging) return;
+      const pt = svgPt(cx, cy);
+      const nx = pt.x - dragOffX;
+      const ny = pt.y - dragOffY;
+      // Move the whole group
+      g.setAttribute('transform',`translate(${nx-origX},${ny-origY})`);
+      // Show snap indicator
+      const snap = snapToGrid(pt.x - dragOffX + bw/2, pt.y - dragOffY + bh/2, bw, bh);
+      dropIndicator.setAttribute('x', snap.x);
+      dropIndicator.setAttribute('y', snap.y);
+      dropIndicator.setAttribute('width', bw);
+      dropIndicator.setAttribute('height', bh);
+      dropIndicator.setAttribute('opacity', '1');
+    }
+
+    function endDrag(cx, cy) {
+      if (!dragging) return;
+      dragging = false;
+      g.setAttribute('cursor','grab');
+      rect.setAttribute('opacity','1');
+      rect.style.filter = '';
+      g.setAttribute('transform','');
+      dropIndicator.setAttribute('opacity','0');
+
+      const pt     = svgPt(cx, cy);
+      const nx     = pt.x - dragOffX + bw/2;
+      const ny     = pt.y - dragOffY + bh/2;
+      const snap   = snapToGrid(nx, ny, bw, bh);
+      const zone   = zones.find(zn => zn.id === z.id);
+      if (!zone) return;
+
+      const origSide = zone.mapSide;
+      const origPos  = zone.mapPos;
+
+      // ── Collision resolution ──────────────────────────────────────────────
+      // 1. Check if preferred slot is free
+      let finalSide = snap.side === 'centre' ? 'center' : snap.side;
+      let finalPos  = snap.pos;
+
+      if (slotOccupied(finalSide, finalPos, zone.id)) {
+        // 2. Try nearest free slot on same side
+        const freePos = nearestFreeSlot(finalSide, finalPos, zone.id);
+        if (freePos !== null) {
+          finalPos = freePos;
+          // accepted — nudged to nearest free slot
+        } else {
+          // 3. Try other sides in order of proximity
+          const sides = ['left','right','centre'].filter(s => s !== snap.side);
+          let placed = false;
+          for (const trySide of sides) {
+            const fp = nearestFreeSlot(trySide, finalPos, zone.id);
+            if (fp !== null) {
+              finalSide = trySide === 'centre' ? 'center' : trySide;
+              finalPos  = fp;
+              placed = true;
+              break;
+            }
+          }
+          if (!placed) {
+            // 4. No space anywhere — silently return to original position
+            // Just re-render without changing zone data
+            const mapZones2   = zones.filter(zn => (zn.mapId||'outdoor') === activeMapId);
+            const positioned2 = autoPosition(mapZones2);
+            const visible2    = positioned2.filter(zn => mapFilter==='ALL' || groupLetters(zn.group).includes(mapFilter));
+            renderActiveSvg(visible2, mapId);
+            return;
+          }
+        }
+      }
+
+      // ── Apply and save ────────────────────────────────────────────────────
+      pushUndo();
+      zone.mapSide    = finalSide;
+      zone.mapPos     = finalPos;
+      zone._autoPlaced = false;
+      save();
+
+      const mapZones2   = zones.filter(zn => (zn.mapId||'outdoor') === activeMapId);
+      const positioned2 = autoPosition(mapZones2);
+      const visible2    = positioned2.filter(zn => mapFilter==='ALL' || groupLetters(zn.group).includes(mapFilter));
+      renderActiveSvg(visible2, mapId);
+      renderMapPanel();
+    }
+
+    // Mouse events
+    g.addEventListener('mousedown', e => { e.preventDefault(); startDrag(e.clientX,e.clientY); });
+    svg.addEventListener('mousemove', e => { if(dragging) moveDrag(e.clientX,e.clientY); });
+    svg.addEventListener('mouseup',   e => { if(dragging) endDrag(e.clientX,e.clientY); });
+    svg.addEventListener('mouseleave',e => { if(dragging) endDrag(e.clientX,e.clientY); });
+
+    // Touch events (iPad)
+    g.addEventListener('touchstart', e => { e.preventDefault(); const t=e.touches[0]; startDrag(t.clientX,t.clientY); }, {passive:false});
+    svg.addEventListener('touchmove', e => { if(!dragging)return; e.preventDefault(); const t=e.touches[0]; moveDrag(t.clientX,t.clientY); }, {passive:false});
+    svg.addEventListener('touchend',  e => { if(!dragging)return; e.preventDefault(); const t=e.changedTouches[0]; endDrag(t.clientX,t.clientY); }, {passive:false});
+
+
+    // ── RESIZE HANDLE (bottom-right corner, drag to resize) ────────────────
+    const RH = 10;
+    const handle = el('rect',{x:x+bw-RH,y:y+bh-RH,width:RH,height:RH,rx:2,
+      fill:colPair.base,opacity:0.6,cursor:'se-resize'},g);
+    el('text',{x:x+bw-3,y:y+bh-2,'font-size':7,fill:'#fff','pointer-events':'none',
+      'text-anchor':'end','font-family':'monospace'},g).textContent='⇡';
+
+    let resizing=false, rsStart=null, rsOrigW=bw, rsOrigH=bh;
+    function startResize(cx,cy){
+      resizing=true; rsStart=svgPt(cx,cy); rsOrigW=bw; rsOrigH=bh;
+      handle.setAttribute('opacity','1');
+      dragging=false; // prevent drag handlers from also firing
+    }
+    function moveResize(cx,cy){
+      if(!resizing || !rsStart)return;
+      const pt=svgPt(cx,cy);
+      const nw=Math.max(50,Math.round(rsOrigW+(pt.x-rsStart.x)));
+      const nh=Math.max(30,Math.round(rsOrigH+(pt.y-rsStart.y)));
+      rect.setAttribute('width',nw); rect.setAttribute('height',nh);
+      handle.setAttribute('x',x+nw-RH); handle.setAttribute('y',y+nh-RH);
+    }
+    function endResize(cx,cy){
+      if(!resizing || !rsStart) return;
+      resizing=false;
+      handle.setAttribute('opacity','0.6');
+      const pt=svgPt(cx,cy);
+      const dx=pt.x - rsStart.x;
+      const dy=pt.y - rsStart.y;
+      rsStart=null;
+      const nw=Math.max(50,Math.round(rsOrigW+dx));
+      const nh=Math.max(30,Math.round(rsOrigH+dy));
+      // Only save valid finite dimensions
+      if(!Number.isFinite(nw)||!Number.isFinite(nh)) return;
+      const zone=zones.find(zn=>zn.id===z.id);
+      if(zone){
+        pushUndo();
+        zone.zoneW=nw; zone.zoneH=nh;
+        // Flush any pending debounce so this save goes immediately
+        if(savePending){ clearTimeout(savePending); savePending=null; }
+        save();
+        const mz=zones.filter(zn=>(zn.mapId||'outdoor')===activeMapId);
+        renderActiveSvg(autoPosition(mz).filter(zn=>mapFilter==='ALL'||groupLetters(zn.group).includes(mapFilter)),mapId);
+      }
+    }
+    handle.addEventListener('mousedown',e=>{e.stopPropagation();e.preventDefault();startResize(e.clientX,e.clientY);});
+    svg.addEventListener('mousemove',e=>{if(resizing)moveResize(e.clientX,e.clientY);});
+    svg.addEventListener('mouseup',  e=>{if(resizing)endResize(e.clientX,e.clientY);});
+    handle.addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();const t=e.touches[0];startResize(t.clientX,t.clientY);},{passive:false});
+    svg.addEventListener('touchmove',e=>{if(resizing){e.preventDefault();const t=e.touches[0];moveResize(t.clientX,t.clientY);}},{passive:false});
+    svg.addEventListener('touchend', e=>{if(resizing){e.preventDefault();const t=e.changedTouches[0];endResize(t.clientX,t.clientY);}},{passive:false});
+
+    // Click (no drag) — select zone
+    g.addEventListener('click', e => {
+      if (Math.abs(e.clientX-(startPt?startPt.x+svg.getBoundingClientRect().left:e.clientX))<5) {
+        selectedMap = selectedMap===z.id ? null : z.id;
+        renderMapPanel();
+        const mapZ = zones.filter(zn=>(zn.mapId||'outdoor')===activeMapId);
+        renderActiveSvg(autoPosition(mapZ).filter(zn=>mapFilter==='ALL'||groupLetters(zn.group).includes(mapFilter)), mapId);
+      }
+    });
+  });
+}
+
+
+
+
+function renderMapPanel() {
+  const panel = document.getElementById('map-panel');
+  const z = zones.find(z=>z.id===selectedMap);
+  const errs = validate();
+
+  if(!z) {
+    // Show ALL zones on this map in the list (even unpositioned ones)
+    const allOnMap = zones.filter(z=>(z.mapId||'outdoor')===activeMapId);
+    const ghZones = allOnMap.filter(z=>mapFilter==='ALL'||groupLetters(z.group).includes(mapFilter));
+    panel.innerHTML = `<div class="map-panel-empty">
+      <div style="font-size:10px;color:var(--rose);letter-spacing:2px;font-family:'Nunito',sans-serif;font-weight:700">SELECT A ZONE</div>
+      <p>Click any bed on the map to view and edit its full schedule details.</p>
+      <div class="map-zone-list" id="map-zone-list">
+        <div style="font-size:8px;color:var(--sage);letter-spacing:3px;margin-bottom:8px;text-transform:uppercase;font-weight:700">${esc(mapLabel(activeMapId)).toUpperCase()} ZONES (${allOnMap.length})</div>
+        ${ghZones.map(z=>`<div class="map-zone-item" onclick="selectedMap=${z.id};renderMapPanel();renderMapTabs()">
+          <span>${esc(z.name)}</span>
+          <div style="display:flex;align-items:center;gap:5px">
+            <span class="zt">${z.start}</span>
+            ${z.group ? `<span class="badge badge-${z.group.toLowerCase()}">${z.group}</span>` : ''}
+            ${errs[z.id]?'<span style="color:#e74c3c;font-size:9px">⚠</span>':''}
+          </div></div>`).join('')}
+      </div>
+    </div>`;
+    return;
+  }
+
+  const e = errs[z.id]||{};
+  const base = z.group==='A'?'#5a9e5f':'#66bb6a';
+  const _sessions = FREQ_SESSIONS[z.freq] || 1;
+  const galWeek = ((z.gph||1.0)/60 * z.dur * _sessions).toFixed(1);
+  panel.innerHTML = `<div class="map-detail" style="border:1px solid ${base}44">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div>
+        <div style="font-size:8px;color:var(--rose);letter-spacing:3px;margin-bottom:4px">ZONE</div>
+        <div style="font-size:17px;font-weight:600;color:var(--ink);font-family:'Cormorant Garamond',Georgia,serif">${esc(z.name)}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">${esc(z.notes.split('|')[0])||''}</div>
+      </div>
+      <div style="width:32px;height:32px;border-radius:50%;background:${base};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff;flex-shrink:0">${esc(z.group)}</div>
+    </div>
+    ${[['Duration',z.dur+'m'],['Frequency',z.freq],['Days',z.days],['Start',z.start],['End',z.end],['Gal/Week',galWeek+' gal']]
+      .map(([k,v])=>`<div class="detail-kv"><span class="k">${k}</span><span class="v" style="${(k==='Start'||k==='End')&&e.overlap?'color:#c0394a':''}${k==='End'&&e.endBefore?'color:#f39c12':''}">${v}</span></div>`).join('')}
+    ${Object.keys(e).length?`<div style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:5px;padding:7px 10px;font-size:9px;color:#e74c3c;margin-top:10px">${
+      [e.dupName&&'Duplicate zone name',e.overlap&&'Time overlap conflict',e.endBefore&&'End time before start'].filter(Boolean).join(' · ')
+    }</div>`:''}
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-primary btn-sm" style="flex:1" onclick="openModal(${z.id})">Edit Zone</button>
+      <button class="btn btn-ghost btn-sm" onclick="selectedMap=null;renderMapPanel();renderMapTabs()">✕</button>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER WATER
+// ═══════════════════════════════════════════════════════════
+function renderWater() {
+  let totalWeek=0, totalMonth=0;
+  const rows = zones.map((z,i)=>{
+    const sessions = FREQ_SESSIONS[z.freq]||1;
+    const gph = z.gph||1.0;
+    const gpm = gph/60;
+    const gps = +(gpm*z.dur).toFixed(1);
+    const gpw = +(gpm*z.dur*sessions).toFixed(1);
+    const gpm2 = +(gpw*4.33).toFixed(1);
+    totalWeek+=gpw; totalMonth+=gpm2;
+    const bg = i%2===0?'background:rgba(255,255,255,0.02)':'';
+    return `<tr style="${bg}">
+      <td>${esc(z.name)}</td>
+      <td style="text-align:center">${z.dur}</td>
+      <td>${esc(z.freq)}</td>
+      <td style="text-align:center">${gph}</td>
+      <td style="text-align:center">${sessions}</td>
+      <td style="text-align:center">${gps}</td>
+      <td style="text-align:center;color:#2e7d32;font-weight:700">${gpw}</td>
+      <td style="text-align:center;color:var(--ink)">${gpm2}</td>
+    </tr>`;
+  }).join('');
+  const totRow = `<tr style="background:rgba(76,175,130,0.12);font-weight:700">
+    <td colspan="6" style="color:var(--rose);letter-spacing:2px">TOTALS</td>
+    <td style="text-align:center;color:var(--deep-rose)">${totalWeek.toFixed(1)}</td>
+    <td style="text-align:center;color:var(--ink)">${totalMonth.toFixed(1)}</td>
+  </tr>`;
+  document.getElementById('water-body').innerHTML = rows + totRow;
+
+  // ── Summary cards above table ──
+  const ghZones = zones.filter(z=>z.ztype&&z.ztype.startsWith('gh'));
+  const outdoorZones = zones.filter(z=>!z.ztype||!z.ztype.startsWith('gh'));
+  let ghWeek=0, outdoorWeek=0;
+  ghZones.forEach(z=>{const gph=z.gph||1.0;const sessions=FREQ_SESSIONS[z.freq]||1;ghWeek+=(gph/60)*z.dur*sessions;});
+  outdoorZones.forEach(z=>{const gph=z.gph||1.0;const sessions=FREQ_SESSIONS[z.freq]||1;outdoorWeek+=(gph/60)*z.dur*sessions;});
+  const dailyAvg = (totalWeek/7).toFixed(1);
+  const summaryItems = [
+    {label:'Total Weekly',    val:totalWeek.toFixed(1)+' gal',  sub:'all zones'},
+    {label:'Total Monthly',   val:(totalMonth).toFixed(0)+' gal',sub:'est. × 4.33'},
+    {label:'Daily Average',   val:dailyAvg+' gal',              sub:'per day'},
+    {label:'Greenhouse',      val:ghWeek.toFixed(1)+' gal/wk',  sub:ghZones.length+' zones'},
+    {label:'Outdoor',         val:outdoorWeek.toFixed(1)+' gal/wk', sub:outdoorZones.length+' zones'},
+    {label:'Zones Tracked',   val:zones.length,                 sub:'total zones'},
+  ];
+  document.getElementById('water-summary').innerHTML = summaryItems.map(s=>`
+    <div style="background:#fff;border:1.5px solid var(--light-border);border-radius:12px;padding:10px 18px;min-width:100px;text-align:center;box-shadow:var(--card-shadow)">
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;color:#2e7d32;line-height:1">${s.val}</div>
+      <div style="font-size:8px;color:var(--muted);letter-spacing:1.5px;margin-top:3px;text-transform:uppercase">${s.label}</div>
+      <div style="font-size:9px;color:var(--warm-tan);margin-top:1px">${s.sub}</div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════
+function populateSelects() {
+  const dur = document.getElementById('f-duration');
+  const freq = document.getElementById('f-freq');
+  const days = document.getElementById('f-days');
+  dur.innerHTML = DURATIONS.map(d=>`<option value="${d}">${d} min</option>`).join('');
+  freq.innerHTML = FREQUENCIES.map(f=>`<option value="${f}">${f}</option>`).join('');
+  days.innerHTML = DAYS_OPTS.map(d=>`<option value="${d}">${d}</option>`).join('');
+  refreshMapSelect();
+}
+
+function openModal(id) {
+  editingId = id;
+  const z = zones.find(z=>z.id===id);
+  if(!z) return;
+  document.getElementById('modal-title').textContent = 'EDIT ZONE — '+z.name;
+  document.getElementById('f-name').value = z.name||'';
+  document.getElementById('f-group').value = z.group||'';
+  document.getElementById('f-duration').value = z.dur||20;
+  document.getElementById('f-freq').value = z.freq||FREQUENCIES[0];
+  document.getElementById('f-days').value = z.days||DAYS_OPTS[0];
+  document.getElementById('f-start').value = z.start||'';
+  document.getElementById('f-end').value = z.end||'';
+  document.getElementById('f-gph').value = z.gph||1.0;
+  refreshMapSelect();
+  document.getElementById('f-mapid').value = z.mapId||'outdoor';
+  document.getElementById('f-mapside').value = z.mapSide||'';
+  const mpos = document.getElementById('f-mappos');
+  mpos.value = z.mapPos!=null ? String(z.mapPos) : '';
+  document.getElementById('f-notes').value = z.notes||'';
+  document.getElementById('modal-delete-btn').style.display = '';
+  document.getElementById('modal-dupe-btn').style.display = '';
+  document.getElementById('modal-err').style.display='none';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function addZone() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'ADD NEW ZONE';
+  document.getElementById('f-name').value='';
+  document.getElementById('f-group').value='';
+  document.getElementById('f-duration').value=20;
+  document.getElementById('f-freq').value='Daily';
+  document.getElementById('f-days').value='Mon–Sun';
+  document.getElementById('f-start').value='';
+  document.getElementById('f-end').value='';
+  document.getElementById('f-notes').value='';
+  document.getElementById('f-gph').value='1.0';
+  refreshMapSelect();
+  document.getElementById('modal-delete-btn').style.display='none';
+  document.getElementById('modal-dupe-btn').style.display='none';
+  document.getElementById('modal-err').style.display='none';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function duplicateZone() {
+  if (!editingId) return;
+  const src = zones.find(z => z.id === editingId);
+  if (!src) return;
+  pushUndo();
+  const copy = { ...src, id: newId(), name: src.name + ' (copy)', mapPos: null, mapSide: null };
+  zones.push(copy);
+  save(); closeModal(); renderAll();
+}
+
+function autoEndTime() {
+  const start = document.getElementById('f-start').value;
+  const dur = document.getElementById('f-duration').value;
+  if(start&&dur) document.getElementById('f-end').value = calcEnd(start,dur);
+}
+
+function saveModal() {
+  const name = document.getElementById('f-name').value.trim();
+  const group = document.getElementById('f-group').value.trim().toUpperCase();
+  const dur = parseInt(document.getElementById('f-duration').value);
+  const freq = document.getElementById('f-freq').value;
+  const days = document.getElementById('f-days').value;
+  const start = document.getElementById('f-start').value.trim();
+  const end = document.getElementById('f-end').value.trim();
+  const notes = document.getElementById('f-notes').value.trim();
+  const gph = parseFloat(document.getElementById('f-gph').value)||1.0;
+  const mapId = document.getElementById('f-mapid').value||'outdoor';
+  const mapSide = document.getElementById('f-mapside').value||null;
+  const mapPosRaw = document.getElementById('f-mappos').value;
+  const mapPos = mapPosRaw !== '' ? parseInt(mapPosRaw) : null;
+  const errEl = document.getElementById('modal-err');
+
+  if(!name) { errEl.textContent='Zone name is required.'; errEl.style.display='block'; return; }
+  function validTime(t) {
+    if(!t) return true;
+    if(!/^\d{2}:\d{2}$/.test(t)) return false;
+    const [h,m] = t.split(':').map(Number);
+    return h>=0 && h<=23 && m>=0 && m<=59;
+  }
+  if(!validTime(start)) { errEl.textContent='Start time must be HH:MM (00:00–23:59).'; errEl.style.display='block'; return; }
+  if(!validTime(end))   { errEl.textContent='End time must be HH:MM (00:00–23:59).'; errEl.style.display='block'; return; }
+
+  if(editingId) {
+    pushUndo();
+    const z = zones.find(z=>z.id===editingId);
+    if(z) { z.name=name;z.group=group;z.dur=dur;z.freq=freq;z.days=days;z.start=start;z.end=end||calcEnd(start,dur);z.notes=notes;z.gph=gph;z.mapId=mapId;z.mapSide=mapSide;z.mapPos=mapPos; }
+  } else {
+    pushUndo();
+    zones.push({id:newId(),name,group,dur,freq,days,start,end:end||calcEnd(start,dur),notes,gph,mapId,mapSide,mapPos,ztype:'outdoor'});
+  }
+  save(); closeModal(); renderAll();
+}
+
+function deleteZone() {
+  if(!editingId) return;
+  const idToDelete = editingId;
+  showInlineDialog({
+    title: 'Delete Zone', msg: 'Delete this zone? This cannot be undone.',
+    okText: 'Delete', cancelText: 'Cancel',
+    onOk: () => {
+      pushUndo();
+      zones = zones.filter(z => z.id !== idToDelete);
+      if (selectedMap === idToDelete) selectedMap = null;
+      save(); closeModal(); renderAll();
+    }
+  });
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingId=null;
+}
+
+function closeModalOnBg(e) {
+  if(e.target===document.getElementById('modal-overlay')) closeModal();
+}
+
+// ═══════════════════════════════════════════════════════════
+// PRINT
+// ═══════════════════════════════════════════════════════════
+function printSchedule(blank) {
+  const w = window.open('','_blank');
+  const cols = ['#','Zone Name','Group','Duration','Frequency','Days','Start','End','Notes'];
+  const rows = blank
+    ? Array.from({length:25},(_,i)=>`<tr><td>${i+1}</td>${Array(8).fill('<td></td>').join('')}</tr>`).join('')
+    : zones.map((z,i)=>`<tr>
+        <td>${i+1}</td><td>${esc(z.name)}</td><td>${esc(z.group)}</td><td>${z.dur}m</td>
+        <td>${esc(z.freq)}</td><td>${esc(z.days)}</td><td>${z.start}</td><td>${z.end}</td>
+        <td>${esc(z.notes)}</td></tr>`).join('');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<!-- CSP removed: was blocking Firebase fetch on Safari file:// -->
+    <title>${blank?'Field Sheet – Blank':'Watering Schedule'}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+html,body{height:auto;}
+      body{font-family:Arial,sans-serif;font-size:10px;padding:12px}
+      h1{font-size:14px;margin-bottom:4px}
+      p{font-size:9px;color:#666;margin-bottom:10px}
+      table{width:100%;border-collapse:collapse;table-layout:fixed}
+      th{background:${blank?'#000':'#333'};color:#fff;padding:6px 5px;text-align:left;font-size:9px;border:1px solid #ccc}
+      td{padding:5px;border:${blank?'1px solid #000':'1px solid #ccc'};vertical-align:middle;font-size:9px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+      tr:nth-child(even) td{background:${blank?'#fff':'#f5f5f5'}}
+      @page{size:letter portrait;margin:0.4in 0.3in}
+      @media print{body{padding:0}}
+      col.n{width:3%}col.name{width:${blank?'25%':'16%'}}col.grp{width:6%}col.dur{width:6%}
+      col.freq{width:${blank?'14%':'14%'}}col.days{width:${blank?'14%':'13%'}}
+      col.t{width:7%}col.notes{width:${blank?'18%':'24%'}}
+    </style></head><body>
+    <h1>${blank?'Irrigation Field Sheet':'Irrigation Watering Schedule'}</h1>
+    <p>${blank?'Print and fill out in the field.':'Generated '+new Date().toLocaleDateString()+' · '+zones.length+' zones'}</p>
+    <table>
+      <colgroup><col class="n"><col class="name"><col class="grp"><col class="dur"><col class="freq"><col class="days"><col class="t"><col class="t"><col class="notes"></colgroup>
+      <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div id="close-bar" style="display:none;margin-top:18px;text-align:center">
+      <button onclick="window.close()" style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;padding:10px 28px;background:#2e7d32;color:#fff;border:none;border-radius:20px;cursor:pointer;letter-spacing:0.5px">← Close &amp; Return to App</button>
+    </div>
+    <script>window.onload=()=>{
+  // Auto-scale to fit exactly one printed page
+  const usableH = 920;
+  const contentH = document.documentElement.offsetHeight;
+  if(contentH > usableH){
+    const z = (usableH/contentH).toFixed(3);
+    const s = document.createElement('style');
+    s.textContent = '@media print{body{zoom:'+z+';-webkit-transform:scale('+z+');-webkit-transform-origin:top left;width:'+(100/z).toFixed(1)+'%;}}';
+    document.head.appendChild(s);
+  }
+  window.print();
+  document.getElementById('close-bar').style.display='block';
+}<\/script>
+
+</body></html>`);
+  w.document.close();
+}
+
+// ── Water usage estimator ─────────────────────────────────────────────────────
+function calcWaterUsage() {
+  const rate = parseFloat(document.getElementById('water-rate')?.value) || 0;
+  const unitGal = parseInt(document.getElementById('water-unit')?.value) || 1000;
+  const el = document.getElementById('water-result');
+  if (!el) return;
+  // gallons per session = gph × (dur/60); sessions/week from FREQ_SESSIONS
+  let weeklyGal = 0;
+  zones.forEach(z => {
+    const sessionsPerWeek = FREQ_SESSIONS[z.freq] || 1;
+    const galPerSession = (z.gph || 1.0) * ((z.dur || 0) / 60);
+    weeklyGal += galPerSession * sessionsPerWeek;
+  });
+  const monthlyGal = weeklyGal * 4.33;
+  const monthlyCost = (monthlyGal / unitGal) * rate;
+  const yearlyGal = weeklyGal * 52;
+  const yearlyCost = (yearlyGal / unitGal) * rate;
+  el.innerHTML = `
+    <div><b>Weekly:</b> ${Math.round(weeklyGal).toLocaleString()} gal</div>
+    <div><b>Monthly:</b> ${Math.round(monthlyGal).toLocaleString()} gal &nbsp;·&nbsp; <b style="color:#2e7d32">$${monthlyCost.toFixed(2)}</b></div>
+    <div><b>Yearly:</b> ${Math.round(yearlyGal).toLocaleString()} gal &nbsp;·&nbsp; <b style="color:#2e7d32">$${yearlyCost.toFixed(2)}</b></div>
+    <div style="font-size:10px;color:var(--muted);margin-top:4px">${zones.length} zones · adjust rate above to match your utility bill</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════════
+function exportData() {
+  const blob = new Blob([JSON.stringify({zones,season,nextId,exported:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'irrigation-data-'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();
+}
+
+function importData(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if(!d.zones) { alert('Invalid file – no zones found.'); return; }
+      showInlineDialog({title:'Import Data',msg:`Import ${d.zones.length} zones? This will replace all current data.`,okText:'Import',cancelText:'Cancel',onOk:()=>{
+        pushUndo();
+        zones=d.zones; season=d.season||'Spring'; nextId=d.nextId||100;
+        save(); renderAll();
+      }});
+    } catch { alert('Invalid JSON file.'); }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// ═══════════════════════════════════════════════════════════
+// TAB / SEASON / FILTER CONTROLS
+// ═══════════════════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelector(`.tab-btn[onclick*="${name}"]`).classList.add('active');
+  if(name==='map') { renderMapTabs(); renderGroupFilters(); renderMapPanel(); }
+  if(name==='water') renderWater();
+  if(name==='print') calcWaterUsage();
+  if(name==='propmap') showGeoTab();
+}
+
+function setSeason(btn, s) {
+  season=s;
+  document.querySelectorAll('#tab-schedule .seg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  save(); renderSchedule();
+}
+
+function setMapFilter(btn, f) {
+  mapFilter=f;
+  document.querySelectorAll('#tab-map .seg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedMap=null; renderMapTabs(); renderMapPanel();
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════
+// DEV CONSOLE FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+function devStatus(elId, msg, isErr) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.textContent = (isErr ? '✗ ' : '✓ ') + msg;
+  el.style.color = isErr ? '#c0392b' : '#2e7d32';
+  setTimeout(() => { el.textContent = ''; el.style.color = ''; }, 4000);
+}
+
+// ── Data management ──────────────────────────────────────────
+function devResetMaps()        { resetMapsOnly(); devStatus('dev-data-status','Map positions reset to defaults'); }
+function devResetAll()         { showInlineDialog({title:'Factory Reset',msg:'Reset ALL data to defaults?',okText:'Reset',cancelText:'Cancel',onOk:()=>{resetToDefaults();devStatus('dev-data-status','Factory reset complete');}}); }
+function devClearLocalStorage(){ localStorage.clear(); devStatus('dev-data-status','localStorage cleared — reload to reinitialise'); }
+function devClearCrashFile()   { clearCrashFile(); devStatus('dev-data-status','Crash file cleared'); }
+function devExportRaw()        { exportData(); devStatus('dev-data-status','Raw JSON exported'); }
+
+// ── Firebase ─────────────────────────────────────────────────
+function devForceSync() {
+  connecting = false; firstSync = true;
+  setDbStatus('connecting');
+  doConnect(readCrashFile());
+  devStatus('dev-fb-status','Force sync triggered');
+}
+function devReadCloud() {
+  fbRead()
+    .then(d => { console.log('[DEV] Cloud data:', d); devStatus('dev-fb-status','Cloud data logged to console'); })
+    .catch(e => devStatus('dev-fb-status','Read failed: '+e.message, true));
+}
+function devDeleteCloud() {
+  showInlineDialog({title:'Delete Cloud Document',msg:'Delete the cloud document? App will re-seed on next sync.',okText:'Delete',cancelText:'Cancel',onOk:()=>{
+    fetchWithTimeout(`${FB_DOC_URL}?key=${FB_API_KEY}`,{method:'DELETE',mode:'cors',credentials:'omit'})
+      .then(() => devStatus('dev-fb-status','Cloud document deleted'))
+      .catch(e => devStatus('dev-fb-status','Delete failed: '+e.message, true));
+  }});
+}
+
+// ── Schema ───────────────────────────────────────────────────
+function devRunMigrate() {
+  const raw = localStorage.getItem('lovejoy_v2');
+  if (!raw) { devStatus('dev-schema-status','No local data found',true); return; }
+  try {
+    const d = migrate(JSON.parse(raw));
+    zones = d.zones; season = d.season; nextId = d.nextId;
+    saveLocal(d); renderAll();
+    devStatus('dev-schema-status','migrate() run — data normalised');
+  } catch(e) { devStatus('dev-schema-status','migrate() error: '+e.message, true); }
+}
+function devBumpSchema() {
+  const raw = localStorage.getItem('lovejoy_v2');
+  if (!raw) { devStatus('dev-schema-status','No local data',true); return; }
+  try {
+    const d = JSON.parse(raw);
+    d.schemaVersion = (d.schemaVersion||1) + 1;
+    localStorage.setItem('lovejoy_v2', JSON.stringify(d));
+    devStatus('dev-schema-status','Schema bumped to v' + d.schemaVersion);
+  } catch(e) { devStatus('dev-schema-status','Error: '+e.message, true); }
+}
+function devShowSchema() {
+  const sample = zones[0];
+  const pre = document.getElementById('dev-state-pre');
+  pre.style.display = 'block';
+  pre.textContent = JSON.stringify(Object.keys(sample||{}), null, 2);
+  devStatus('dev-schema-status','Zone keys shown below');
+}
+
+// ── Bulk zone ops ─────────────────────────────────────────────
+function devClearAllMapPositions() {
+  pushUndo();
+  zones.forEach(z => { z.mapSide=null; z.mapPos=null; z.zoneW=null; z.zoneH=null; });
+  save(); renderAll();
+  devStatus('dev-zone-status','All map positions cleared');
+}
+function devNormalizeZones() {
+  const d = migrate({ zones, season, nextId });
+  zones = d.zones; save(); renderAll();
+  devStatus('dev-zone-status','All zones normalised with defaults');
+}
+function devListErrors() {
+  const errs = validate();
+  const pre = document.getElementById('dev-state-pre');
+  pre.style.display = 'block';
+  if (!Object.keys(errs).length) {
+    pre.textContent = '✓ No validation errors';
+  } else {
+    pre.textContent = JSON.stringify(
+      Object.entries(errs).map(([id,e]) => ({ id, name: zones.find(z=>z.id==id)?.name, errors: Object.keys(e) })),
+      null, 2
+    );
+  }
+  devStatus('dev-zone-status', Object.keys(errs).length + ' error(s) shown below');
+}
+function devCountZones() {
+  const stats = {
+    total: zones.length,
+    byMap: {},
+    byGroup: {},
+    withErrors: Object.keys(validate()).length,
+    unpositioned: zones.filter(z=>!z.mapSide).length,
+  };
+  zones.forEach(z => {
+    const m = z.mapId||'outdoor';
+    stats.byMap[m] = (stats.byMap[m]||0)+1;
+    const g = z.group||'(none)';
+    stats.byGroup[g] = (stats.byGroup[g]||0)+1;
+  });
+  console.log('[DEV] Zone stats:', stats);
+  const pre = document.getElementById('dev-state-pre');
+  pre.style.display = 'block';
+  pre.textContent = JSON.stringify(stats, null, 2);
+  devStatus('dev-zone-status','Stats shown below and in console');
+}
+
+// ── Live editor ───────────────────────────────────────────────
+function devLoadToEditor() {
+  document.getElementById('dev-json-editor').value = JSON.stringify(zones, null, 2);
+  devStatus('dev-editor-status','Current zones loaded into editor');
+}
+function devApplyEditor() {
+  try {
+    const parsed = JSON.parse(document.getElementById('dev-json-editor').value);
+    if (!Array.isArray(parsed)) throw new Error('Must be an array');
+    pushUndo();
+    zones = parsed;
+    save(); renderAll();
+    devStatus('dev-editor-status','Applied ' + parsed.length + ' zones from editor');
+  } catch(e) { devStatus('dev-editor-status','Parse error: '+e.message, true); }
+}
+
+// ── App state ─────────────────────────────────────────────────
+function devShowState() {
+  const state = {
+    zones: zones.length, season, nextId, connecting, offlineMode, firstSync,
+    undoStack: undoStack.length, savePending: !!savePending,
+    activeMapId, mapFilter, selectedMap,
+    localStorage_keys: Object.keys(localStorage),
+    schemaVersion: SCHEMA_VERSION,
+    crashFile: !!readCrashFile(),
+  };
+  console.log('[DEV] App state:', state);
+  const pre = document.getElementById('dev-state-pre');
+  pre.style.display = 'block';
+  pre.textContent = JSON.stringify(state, null, 2);
+  devStatus('dev-state-pre','State logged — see below and console');
+}
+function devReloadPage()  { location.reload(true); }
+function devToggleOffline() {
+  offlineMode = !offlineMode;
+  devStatus('dev-state-pre', 'offlineMode → ' + offlineMode);
+  setDbStatus(offlineMode ? 'offline' : 'connecting');
+  if (!offlineMode) { connecting = false; doConnect(readCrashFile()); }
+}
+function devClearUndo()   { undoStack=[]; updateUndoBtn(); devStatus('dev-state-pre','Undo stack cleared'); }
+
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    showTab('help');
+    setTimeout(() => el.scrollIntoView({behavior:'smooth', block:'start'}), 80);
+  }
+}
+function renderAll() {
+  renderSchedule();
+  if(document.getElementById('tab-map').classList.contains('active')) { renderMapTabs(); renderGroupFilters(); renderMapPanel(); }
+  if(document.getElementById('tab-water').classList.contains('active')) renderWater();
+  if(document.getElementById('tab-propmap').classList.contains('active') && geoMapInited) renderGeoZones();
+}
+
+// ═══════════════════════════════════════════════════════════
+// APP ICON — greenhouse arch + water drop, drawn on canvas
+// ═══════════════════════════════════════════════════════════
+function generateAppIcon() {
+  const S = 512, c = document.createElement('canvas');
+  c.width = S; c.height = S;
+  const g = c.getContext('2d');
+
+  // Background: deep forest green rounded square
+  const bg = g.createLinearGradient(0, 0, S, S);
+  bg.addColorStop(0, '#1e4025');
+  bg.addColorStop(1, '#122018');
+  g.beginPath();
+  const rr = S * 0.22;
+  g.moveTo(rr,0); g.lineTo(S-rr,0); g.quadraticCurveTo(S,0,S,rr);
+  g.lineTo(S,S-rr); g.quadraticCurveTo(S,S,S-rr,S);
+  g.lineTo(rr,S); g.quadraticCurveTo(0,S,0,S-rr);
+  g.lineTo(0,rr); g.quadraticCurveTo(0,0,rr,0);
+  g.closePath();
+  g.fillStyle = bg; g.fill();
+
+  // Subtle inner radial glow
+  const glow = g.createRadialGradient(S*0.42,S*0.38,0, S/2,S/2, S*0.6);
+  glow.addColorStop(0,'rgba(70,160,85,0.13)'); glow.addColorStop(1,'rgba(0,0,0,0)');
+  g.beginPath();
+  g.moveTo(rr,0); g.lineTo(S-rr,0); g.quadraticCurveTo(S,0,S,rr);
+  g.lineTo(S,S-rr); g.quadraticCurveTo(S,S,S-rr,S);
+  g.lineTo(rr,S); g.quadraticCurveTo(0,S,0,S-rr);
+  g.lineTo(0,rr); g.quadraticCurveTo(0,0,rr,0);
+  g.closePath(); g.fillStyle = glow; g.fill();
+
+  // Greenhouse arch
+  const archCx = S/2, archR = 155, archCy = 278, wallBot = 430;
+  const wallL = archCx - archR, wallR = archCx + archR;
+  const sw = 17;
+  g.strokeStyle = 'rgba(255,255,255,0.92)';
+  g.lineWidth = sw; g.lineCap = 'round'; g.lineJoin = 'round';
+
+  // Left wall → dome arc → right wall (one path)
+  g.beginPath();
+  g.moveTo(wallL, wallBot);
+  g.lineTo(wallL, archCy);
+  g.arc(archCx, archCy, archR, Math.PI, 0, false); // top semicircle
+  g.lineTo(wallR, wallBot);
+  g.stroke();
+
+  // Base floor line
+  g.beginPath();
+  g.moveTo(wallL - sw/2, wallBot);
+  g.lineTo(wallR + sw/2, wallBot);
+  g.stroke();
+
+  // Water droplet — centered inside arch
+  const dx = archCx, dy = 328, dr = 60;
+  const ty = dy - dr * 2.18; // top point
+
+  g.beginPath();
+  g.moveTo(dx, ty);
+  g.bezierCurveTo(dx+30, ty+52, dx+dr, dy-18, dx+dr, dy);
+  g.arc(dx, dy, dr, 0, Math.PI, false); // bottom semicircle
+  g.bezierCurveTo(dx-dr, dy-18, dx-30, ty+52, dx, ty);
+  g.closePath();
+
+  const dg = g.createLinearGradient(dx, ty, dx, dy+dr);
+  dg.addColorStop(0,   'rgba(255,255,255,0.97)');
+  dg.addColorStop(0.5, 'rgba(238,250,255,0.95)');
+  dg.addColorStop(1,   'rgba(198,236,255,0.93)');
+  g.fillStyle = dg; g.fill();
+
+  // Drop glare highlight
+  g.beginPath();
+  g.ellipse(dx-16, ty+36, 9, 28, -0.28, 0, Math.PI*2);
+  g.fillStyle = 'rgba(255,255,255,0.52)'; g.fill();
+
+  // Tiny sprout at base of arch
+  g.strokeStyle = 'rgba(150,220,155,0.82)';
+  g.lineWidth = 5; g.lineCap = 'round';
+  // Left leaf curl
+  g.beginPath();
+  g.moveTo(dx-10, wallBot-6);
+  g.bezierCurveTo(dx-28, wallBot-26, dx-20, wallBot-50, dx-6, wallBot-46);
+  g.stroke();
+  // Right leaf curl
+  g.beginPath();
+  g.moveTo(dx+10, wallBot-6);
+  g.bezierCurveTo(dx+28, wallBot-26, dx+20, wallBot-50, dx+6, wallBot-46);
+  g.stroke();
+  // Tiny stem
+  g.beginPath();
+  g.moveTo(dx, wallBot-4); g.lineTo(dx, wallBot-20);
+  g.stroke();
+
+  // Inject as apple-touch-icon and favicon
+  const url = c.toDataURL('image/png');
+  ['apple-touch-icon','apple-touch-icon-precomposed'].forEach(rel => {
+    let lk = document.querySelector(`link[rel="${rel}"]`);
+    if (!lk) { lk = document.createElement('link'); lk.rel = rel; document.head.appendChild(lk); }
+    lk.href = url;
+  });
+  let fav = document.querySelector('link[rel="icon"]');
+  if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; fav.type = 'image/png'; document.head.appendChild(fav); }
+  fav.href = url;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROPERTY MAP — Leaflet satellite view
+// ═══════════════════════════════════════════════════════════
+const GEO_CENTER = [39.167688, -121.199217];
+const GEO_ZOOM   = 17;
+
+let geoMap          = null;
+let geoLayerGroup   = null;  // FeatureGroup holding zone polygons
+let geoDrawControl  = null;
+let geoSelectedId   = null;  // currently selected zone id
+let geoDrawingFor   = null;  // zone id currently being drawn
+let geoMapInited    = false;
+let geoBaseLayers   = {};
+let geoCurrentBase  = 'satellite';
+
+// Color palette per zone type
+function geoZoneColor(z) {
+  if (z.geoColor) return z.geoColor;
+  if (z.ztype === 'gh-deep')    return '#2196f3';
+  if (z.ztype === 'gh-shallow') return '#03bcd4';
+  if (z.ztype === 'outdoor')    return '#4caf50';
+  return '#ff9800';
+}
+
+function showGeoTab() {
+  if (!geoMapInited) {
+    initGeoMap();
+  } else {
+    geoMap.invalidateSize();
+    renderGeoZones();
+  }
+  // Always fetch fresh data when opening this tab — catches changes from other devices
+  freshPoll();
+}
+
+function initGeoMap() {
+  // Load Leaflet + Leaflet.draw dynamically if not yet loaded
+  function loadScript(src, cb) {
+    if (document.querySelector(`script[src="${src}"]`)) { if(cb) cb(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.onload = cb || function(){}; document.head.appendChild(s);
+  }
+
+  function doInit() {
+    if (typeof L === 'undefined') { setTimeout(doInit, 200); return; }
+    if (geoMapInited) { geoMap.invalidateSize(); renderGeoZones(); return; }
+
+    // Base layers
+    // Esri Clarity — sharper compression than standard World Imagery, native zoom up to 21
+    const satellite = L.tileLayer(
+      'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Imagery © Esri', maxNativeZoom: 21, maxZoom: 22 }
+    );
+    // USDA NAIP — 1m/0.6m agricultural aerial imagery for rural CA properties
+    const naip = L.tileLayer(
+      'https://naip.maptiles.arcgis.com/arcgis/rest/services/NAIP/ImageServer/tile/{z}/{y}/{x}',
+      { attribution: 'NAIP Imagery © USDA', maxNativeZoom: 18, maxZoom: 22 }
+    );
+    const topo = L.tileLayer(
+      'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      { attribution: '© OpenTopoMap', maxNativeZoom: 17, maxZoom: 22 }
+    );
+    const street = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution: '© OpenStreetMap', maxNativeZoom: 19, maxZoom: 22 }
+    );
+    geoBaseLayers = { satellite, naip, topo, street };
+
+    geoMap = L.map('propmap-map', {
+      center: GEO_CENTER, zoom: GEO_ZOOM,
+      layers: [satellite],
+      zoomControl: true,
+      attributionControl: true,
+      maxZoom: 22
+    });
+
+    // FeatureGroup for zone polygons (required by Leaflet.draw)
+    geoLayerGroup = new L.FeatureGroup();
+    geoMap.addLayer(geoLayerGroup);
+
+    // Property boundary placeholder pin
+    L.marker(GEO_CENTER, {
+      icon: L.divIcon({
+        className: '',
+        html: '<div style="background:#2e7d32;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4)">🌿</div>',
+        iconSize: [28,28], iconAnchor: [14,14]
+      })
+    }).addTo(geoMap).bindPopup('<b>Love Joy Farms</b><br>12985 Spenceville Rd<br>Penn Valley, CA 95946');
+
+    // Draw control (only active when drawing for a zone)
+    if (typeof L.Control.Draw !== 'undefined') {
+      geoDrawControl = new L.Control.Draw({
+        edit: { featureGroup: geoLayerGroup, edit: true, remove: false },
+        draw: {
+          polygon: { shapeOptions: { color: '#2e7d32', fillOpacity: 0.25 }, allowIntersection: false },
+          polyline: false, rectangle: false, circle: false, circlemarker: false, marker: false
+        }
+      });
+    }
+
+    // Draw created
+    geoMap.on(L.Draw.Event.CREATED, function(e) {
+      if (!geoDrawingFor) return;
+      const latlngs = e.layer.getLatLngs()[0].map(ll => [ll.lat, ll.lng]);
+      const z = zones.find(x => x.id === geoDrawingFor);
+      if (z) {
+        z.geoPolygon = latlngs;
+        save();
+      }
+      stopDrawingMode();
+      renderGeoZones();
+      if (z) selectGeoZone(z.id);
+    });
+
+    // Draw edited
+    geoMap.on(L.Draw.Event.EDITED, function(e) {
+      e.layers.eachLayer(function(layer) {
+        const zid = layer._geoZoneId;
+        if (!zid) return;
+        const z = zones.find(x => x.id === zid);
+        if (z) {
+          z.geoPolygon = layer.getLatLngs()[0].map(ll => [ll.lat, ll.lng]);
+          save();
+        }
+      });
+      renderGeoZones();
+    });
+
+    geoMapInited = true;
+    renderGeoZones();
+    geoMap.invalidateSize();
+    // Fetch fresh cloud data now that the map is ready — resolves the race between
+    // Leaflet loading and Firebase returning (whichever was slower wins correctly)
+    freshPoll();
+  }
+
+  // Load Leaflet.draw after Leaflet
+  loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', function() {
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js', doInit);
+  });
+}
+
+function renderGeoZones() {
+  if (!geoMapInited || !geoLayerGroup) return;
+  geoLayerGroup.clearLayers();
+
+  // Group zones
+  const groups = {};
+  zones.forEach(z => {
+    const g = z.ztype || 'other';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(z);
+  });
+
+  // Draw polygons on map
+  zones.forEach(z => {
+    if (!z.geoPolygon || z.geoPolygon.length < 3) return;
+    const color = geoZoneColor(z);
+    const poly = L.polygon(z.geoPolygon, {
+      color: color, fillColor: color, fillOpacity: 0.25,
+      weight: z.id === geoSelectedId ? 3 : 2,
+      opacity: z.id === geoSelectedId ? 1 : 0.8
+    });
+    poly._geoZoneId = z.id;
+    poly.on('click', function() { selectGeoZone(z.id); });
+    poly.bindTooltip(esc(z.name), { permanent: false, direction: 'center', className: 'geo-zone-tooltip' });
+    geoLayerGroup.addLayer(poly);
+  });
+
+  // Render sidebar list
+  const listEl = document.getElementById('propmap-zone-list');
+  if (!listEl) return;
+
+  const groupOrder = ['outdoor','gh-deep','gh-shallow'];
+  const groupLabels = { 'outdoor':'Outdoor Zones', 'gh-deep':'Greenhouse — Deep Beds', 'gh-shallow':'Greenhouse — Shallow Beds' };
+
+  let html = '';
+  groupOrder.forEach(gkey => {
+    const gZones = zones.filter(z => z.ztype === gkey);
+    if (!gZones.length) return;
+    html += `<div class="propmap-group-label">${groupLabels[gkey] || gkey}</div>`;
+    gZones.forEach(z => {
+      const color = geoZoneColor(z);
+      const hasPoly = z.geoPolygon && z.geoPolygon.length >= 3;
+      const sel = z.id === geoSelectedId ? ' selected' : '';
+      html += `<div class="propmap-zone-item${sel}" onclick="selectGeoZone(${z.id})">
+        <div class="propmap-zone-dot" style="background:${color}"></div>
+        <div class="propmap-zone-name">${esc(z.name)}</div>
+        <div class="propmap-zone-status">${hasPoly ? '✓' : '·'}</div>
+      </div>`;
+    });
+  });
+
+  // Any zones with unknown ztype
+  const rest = zones.filter(z => !groupOrder.includes(z.ztype));
+  if (rest.length) {
+    html += `<div class="propmap-group-label">Other</div>`;
+    rest.forEach(z => {
+      const color = geoZoneColor(z);
+      const hasPoly = z.geoPolygon && z.geoPolygon.length >= 3;
+      const sel = z.id === geoSelectedId ? ' selected' : '';
+      html += `<div class="propmap-zone-item${sel}" onclick="selectGeoZone(${z.id})">
+        <div class="propmap-zone-dot" style="background:${color}"></div>
+        <div class="propmap-zone-name">${esc(z.name)}</div>
+        <div class="propmap-zone-status">${hasPoly ? '✓' : '·'}</div>
+      </div>`;
+    });
+  }
+
+  listEl.innerHTML = html;
+}
+
+function selectGeoZone(id) {
+  geoSelectedId = id;
+  const z = zones.find(x => x.id === id);
+  if (!z) return;
+
+  // Re-render sidebar + polygons (updates selection highlight and polygon weight)
+  renderGeoZones();
+
+  // Scroll selected item into view
+  const sel = document.querySelector(`.propmap-zone-item[onclick="selectGeoZone(${id})"]`);
+  if (sel) sel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+  // Fly to polygon if it exists
+  if (z.geoPolygon && z.geoPolygon.length >= 3) {
+    const bounds = L.latLngBounds(z.geoPolygon);
+    geoMap.flyToBounds(bounds, { padding: [40,40], maxZoom: 20, duration: 0.8 });
+  }
+
+  // Update detail panel
+  const typeLabels = { 'outdoor':'Outdoor', 'gh-deep':'GH Deep Bed', 'gh-shallow':'GH Shallow Bed' };
+  const hasPoly = z.geoPolygon && z.geoPolygon.length >= 3;
+  document.getElementById('pd-name').textContent  = z.name;
+  document.getElementById('pd-type').textContent  = typeLabels[z.ztype] || z.ztype || '—';
+  document.getElementById('pd-sched').textContent = `${z.freq} · ${z.days}`;
+  document.getElementById('pd-dur').textContent   = `${z.dur} min · ${z.gph || 1} GPH`;
+  document.getElementById('pd-notes').textContent = z.notes || '—';
+  document.getElementById('pd-draw-btn').textContent = hasPoly ? '✏ Redraw Zone' : '+ Draw Zone';
+  document.getElementById('pd-clear-btn').style.display = hasPoly ? '' : 'none';
+  document.getElementById('propmap-detail').classList.remove('hidden');
+  document.getElementById('propmap-info').style.display = 'none';
+}
+
+function startDrawingForZone() {
+  if (!geoMapInited || !geoSelectedId) return;
+  geoDrawingFor = geoSelectedId;
+
+  // Remove existing polygon for this zone so we can redraw
+  geoLayerGroup.eachLayer(layer => {
+    if (layer._geoZoneId === geoSelectedId) geoLayerGroup.removeLayer(layer);
+  });
+
+  if (geoDrawControl) {
+    geoMap.addControl(geoDrawControl);
+    // Programmatically click the polygon draw button
+    setTimeout(() => {
+      const drawBtn = document.querySelector('.leaflet-draw-draw-polygon');
+      if (drawBtn) drawBtn.click();
+    }, 100);
+  }
+
+  document.getElementById('propmap-draw-banner').classList.add('visible');
+}
+
+function stopDrawingMode() {
+  geoDrawingFor = null;
+  document.getElementById('propmap-draw-banner').classList.remove('visible');
+  if (geoDrawControl && geoMap.hasLayer && geoMap._controls) {
+    try { geoMap.removeControl(geoDrawControl); } catch(e) {}
+  }
+}
+
+function clearGeoZone() {
+  if (!geoSelectedId) return;
+  const z = zones.find(x => x.id === geoSelectedId);
+  if (!z) return;
+  showInlineDialog({
+    title: 'Clear Zone Boundary',
+    msg: `Clear the map boundary for "${z.name}"?`,
+    okText: 'Clear', cancelText: 'Cancel',
+    onOk: () => {
+      z.geoPolygon = null;
+      save();
+      renderGeoZones();
+      selectGeoZone(geoSelectedId);
+    }
+  });
+}
+
+function geoEditZone() {
+  if (!geoSelectedId) return;
+  const z = zones.find(x => x.id === geoSelectedId);
+  if (!z) { return; }
+  // Open the existing edit modal
+  showTab('schedule');
+  setTimeout(() => { openModal(z.id); }, 200);
+}
+
+function switchGeoBaseLayer(name) {
+  if (!geoMapInited) return;
+  Object.values(geoBaseLayers).forEach(l => { try { geoMap.removeLayer(l); } catch(e){} });
+  if (geoBaseLayers[name]) geoMap.addLayer(geoBaseLayers[name]);
+  geoCurrentBase = name;
+  document.querySelectorAll('.propmap-layer-btn').forEach(b => b.classList.remove('active'));
+  const btns = { satellite: 0, naip: 1, topo: 2, street: 3 };
+  const allBtns = document.querySelectorAll('.propmap-layer-btn');
+  if (allBtns[btns[name]] !== undefined) allBtns[btns[name]].classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  generateAppIcon();
+  populateSelects();
+  renderGroupFilters();
+  initFirebase();   // handles loadLocal + renderAll internally
+  // Sync season buttons to loaded state
+  document.querySelectorAll('#tab-schedule .seg-btn').forEach(b=>{
+    b.classList.toggle('active', b.textContent===season);
+  });
+});
+</script>
+
+<script>
+// ── Offline detection ──────────────────────────────────────────────────────
+function updateOnlineStatus() {
+  document.getElementById('offline-banner').classList.toggle('visible', !navigator.onLine);
+}
+window.addEventListener('online',  updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// ── Service Worker for offline caching ────────────────────────────────────
+if('serviceWorker' in navigator) {
+  const SW_CODE = `
+    const CACHE = 'lovejoy-v1';
+    const FONT_URL = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;600;700&display=swap';
+    self.addEventListener('install', e => {
+      e.waitUntil(
+        caches.open(CACHE).then(cache =>
+          cache.addAll([FONT_URL]).catch(()=>{})
+        ).then(()=>self.skipWaiting())
+      );
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys =>
+        Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))
+      ).then(()=>self.clients.claim()));
+    });
+    self.addEventListener('fetch', e => {
+      if(e.request.url.startsWith('http')) {
+        e.respondWith(
+          caches.match(e.request).then(cached => {
+            if(cached) return cached;
+            return fetch(e.request).then(resp => {
+              if(resp.ok && (e.request.url.includes('fonts.g') || e.request.url.includes('fonts.gstatic'))) {
+                const clone = resp.clone();
+                caches.open(CACHE).then(c=>c.put(e.request, clone));
+              }
+              return resp;
+            }).catch(()=>cached||new Response('',{status:503}));
+          })
+        );
+      }
+    });
+  `;
+  const blob = new Blob([SW_CODE], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, {scope:'/'})
+    .then(()=>console.log('SW registered'))
+    .catch(e=>console.log('SW skipped:', e.message));
+}
+
+// ── Install prompt — show once on iOS Safari after 3s ────────────────────
+function isIOS() {
+  return /iP(ad|hone|od)/i.test(navigator.userAgent) && !window.MSStream;
+}
+function isStandalone() {
+  return window.navigator.standalone === true;
+}
+function dismissInstall() {
+  document.getElementById('install-prompt').classList.remove('visible');
+  try { localStorage.setItem('lovejoy_install_dismissed','1'); } catch(e) {}
+}
+
+// ── Show install prompt on iOS Safari (not standalone) after 3s ──────────
+if (isIOS() && !isStandalone()) {
+  try {
+    if (!localStorage.getItem('lovejoy_install_dismissed')) {
+      setTimeout(() => {
+        const el = document.getElementById('install-prompt');
+        if (el) el.classList.add('visible');
+      }, 3000);
+    }
+  } catch(e) {}
+}
+
+// ── iPad double-tap to edit rows ─────────────────────────────────────────
+// iOS Safari doesn't fire dblclick on touch; simulate with two taps < 350ms
+(function() {
+  let lastTapTime = 0, lastTapTarget = null;
+  document.addEventListener('touchend', function(e) {
+    const row = e.target.closest('tr[ondblclick]');
+    if (!row) return;
+    const now = Date.now();
+    if (row === lastTapTarget && now - lastTapTime < 350) {
+      e.preventDefault();
+      const fn = row.getAttribute('ondblclick');
+      if (fn) { try { eval(fn); } catch(err) {} }
+      lastTapTime = 0; lastTapTarget = null;
+    } else {
+      lastTapTime = now;
+      lastTapTarget = row;
+    }
+  }, { passive: false });
+})();
+
+</script>
+</body>
+</html>
