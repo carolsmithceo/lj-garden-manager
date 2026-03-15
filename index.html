@@ -1390,6 +1390,7 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     <button class="admin-sub-btn" onclick="showAdminTab('history')">↩ Undo History</button>
     <button class="admin-sub-btn" onclick="showAdminTab('data')">🗄 Data</button>
     <button class="admin-sub-btn" onclick="showAdminTab('firebase')">☁ Firebase</button>
+    <button class="admin-sub-btn" onclick="showAdminTab('backups')">💾 Backups</button>
     <button class="admin-sub-btn" onclick="showAdminTab('system')">🖥 System</button>
   </div>
 
@@ -1560,6 +1561,12 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       <div id="admin-fb-info" style="font-size:11px;color:var(--muted);line-height:1.8;font-family:'Courier New',monospace;background:var(--parchment);padding:12px;border-radius:8px;border:1.5px solid var(--light-border)"></div>
       <button class="btn btn-ghost" style="margin-top:8px" onclick="adminRefreshFbInfo()">⟳ Refresh</button>
     </div>
+  </div>
+
+  <!-- BACKUPS -->
+  <div class="admin-sub-panel" id="asub-backups">
+    <div id="backup-loading" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
+    <div id="backup-content" style="font-size:12px;color:var(--muted);padding:20px;text-align:center">Click the Backups tab to load</div>
   </div>
 
   <!-- SYSTEM -->
@@ -2233,7 +2240,7 @@ function adminExportAudit() {
 // ── Admin Console helpers ─────────────────────────────────────
 function showAdminTab(name) {
   document.querySelectorAll('.admin-sub-btn').forEach((b,i) => {
-    const tabs = ['overview','users','audit','history','data','firebase','system'];
+    const tabs = ['overview','users','audit','history','data','firebase','backups','system'];
     b.classList.toggle('active', tabs[i] === name);
   });
   document.querySelectorAll('.admin-sub-panel').forEach(p => p.classList.remove('active'));
@@ -2243,6 +2250,7 @@ function showAdminTab(name) {
   if (name === 'users')    renderUsersTable();
   if (name === 'audit')    loadAndRenderAudit();
   if (name === 'history')  renderHistory();
+  if (name === 'backups')  renderBackupsPanel();
   if (name === 'firebase') adminRefreshFbInfo();
   if (name === 'system')   adminRefreshSystem();
 }
@@ -2257,6 +2265,8 @@ function adminRefreshOverview() {
     { label:'Active Season', val: season, sub: '' },
     { label:'Users', val: appUsers.filter(u=>u.active!==false).length, sub: `${appUsers.filter(u=>u.role==='superadmin').length} admins` },
     { label:'Audit Entries', val: auditLog.length, sub: `max ${MAX_AUDIT}` },
+    { label:'Cloud Backups', val: cloudSnaps.length, sub: `max ${MAX_CLOUD_SNAPS}` },
+    { label:'Local Backups', val: loadLocalSnaps().length, sub: `max ${MAX_LOCAL_SNAPS}` },
     { label:'Undo Stack', val: undoStack.length, sub: `max ${MAX_UNDO}` },
     { label:'Schema Version', val: SCHEMA_VERSION, sub: '' },
     { label:'Sync Status', val: document.getElementById('db-status')?.textContent||'—', sub: '' },
@@ -2301,6 +2311,190 @@ function adminExportAll() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ITERATIVE BACKUP SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+function buildSnapshot(label) {
+  return {
+    ts:        Date.now(),
+    label:     label || 'Auto backup',
+    user:      getUserName(),
+    zones:     JSON.parse(JSON.stringify(zones)),
+    season,
+    nextId,
+    zoneCount: zones.length,
+  };
+}
+
+// ── Local snapshots (localStorage, last 5) ────────────────────
+function loadLocalSnaps() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_SNAP_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function saveLocalSnap(label) {
+  try {
+    const snaps = loadLocalSnaps();
+    snaps.unshift(buildSnapshot(label));
+    const trimmed = snaps.slice(0, MAX_LOCAL_SNAPS);
+    localStorage.setItem(LOCAL_SNAP_KEY, JSON.stringify(trimmed));
+    return true;
+  } catch(e) { return false; }
+}
+
+function restoreLocalSnap(index) {
+  const snaps = loadLocalSnaps();
+  const snap = snaps[index];
+  if (!snap) return;
+  showInlineDialog({ title: 'Restore Backup', msg: `Restore "${snap.label}" from ${new Date(snap.ts).toLocaleString()}? Current data will be overwritten.`, okText: 'Restore', cancelText: 'Cancel',
+    onOk: () => {
+      pushUndo('Before restore: ' + snap.label);
+      zones = snap.zones; season = snap.season || 'Spring'; nextId = snap.nextId || 100;
+      logAudit('bulk_edit', 'All data', `Restored local backup: ${snap.label} (${new Date(snap.ts).toLocaleString()})`);
+      save(); renderAll(); renderBackupsPanel();
+    }
+  });
+}
+
+// ── Cloud snapshots (Firebase, last 10) ───────────────────────
+let cloudSnaps = [];
+
+async function fbReadSnaps() {
+  try {
+    await ensureAuth();
+    const r = await fetchWithTimeout(`${FB_BACKUPS_URL}?key=${FB_API_KEY}`, {
+      mode:'cors', credentials:'omit', headers:{'Authorization':`Bearer ${fbIdToken}`}
+    });
+    if (r.status === 404) return [];
+    if (!r.ok) return [];
+    const doc = await r.json();
+    const d = fromFsDoc(doc);
+    return (d && d.snaps) ? d.snaps : [];
+  } catch(e) { return []; }
+}
+
+async function fbWriteSnaps(snaps) {
+  await ensureAuth();
+  const r = await fetchWithTimeout(`${FB_BACKUPS_URL}?key=${FB_API_KEY}`, {
+    method:'PATCH', mode:'cors', credentials:'omit',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${fbIdToken}`},
+    body: JSON.stringify(toFsDoc({ snaps }))
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+}
+
+async function saveCloudSnap(label) {
+  try {
+    cloudSnaps = await fbReadSnaps();
+    cloudSnaps.unshift(buildSnapshot(label));
+    cloudSnaps = cloudSnaps.slice(0, MAX_CLOUD_SNAPS);
+    await fbWriteSnaps(cloudSnaps);
+    return true;
+  } catch(e) { console.warn('[BACKUP] cloud snap failed:', e.message); return false; }
+}
+
+async function restoreCloudSnap(index) {
+  const snap = cloudSnaps[index];
+  if (!snap) return;
+  showInlineDialog({ title: 'Restore Cloud Backup', msg: `Restore "${snap.label}" from ${new Date(snap.ts).toLocaleString()}? Current data will be overwritten.`, okText: 'Restore', cancelText: 'Cancel',
+    onOk: async () => {
+      pushUndo('Before restore: ' + snap.label);
+      zones = snap.zones; season = snap.season || 'Spring'; nextId = snap.nextId || 100;
+      logAudit('bulk_edit', 'All data', `Restored cloud backup: ${snap.label} (${new Date(snap.ts).toLocaleString()})`);
+      save(); renderAll(); renderBackupsPanel();
+    }
+  });
+}
+
+// ── Auto-backup trigger (once per day) ───────────────────────
+const LAST_BACKUP_KEY = 'lovejoy_last_backup';
+
+async function maybeAutoBackup() {
+  try {
+    const last = parseInt(localStorage.getItem(LAST_BACKUP_KEY) || '0');
+    const now  = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+    if (now - last < oneDay) return; // already backed up today
+    const label = `Auto · ${new Date().toLocaleDateString()}`;
+    saveLocalSnap(label);
+    await saveCloudSnap(label);
+    localStorage.setItem(LAST_BACKUP_KEY, String(now));
+    logAudit('bulk_edit', 'Backup', `Daily auto-backup created: ${label}`);
+  } catch(e) {}
+}
+
+// ── Admin backup panel renderer ───────────────────────────────
+async function renderBackupsPanel() {
+  const el = document.getElementById('asub-backups');
+  if (!el) return;
+
+  // Load cloud snaps
+  const loadingMsg = document.getElementById('backup-loading');
+  if (loadingMsg) loadingMsg.textContent = 'Loading cloud backups…';
+  try { cloudSnaps = await fbReadSnaps(); } catch(e) { cloudSnaps = []; }
+  if (loadingMsg) loadingMsg.textContent = '';
+
+  const localSnaps = loadLocalSnaps();
+  const lastBackup = localStorage.getItem(LAST_BACKUP_KEY);
+
+  el.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+      <button class="btn btn-primary" onclick="adminManualBackup()">💾 Create Backup Now</button>
+      <button class="btn btn-ghost" onclick="renderBackupsPanel()">⟳ Refresh</button>
+      <span style="font-size:10px;color:var(--muted)">Last auto-backup: ${lastBackup ? new Date(parseInt(lastBackup)).toLocaleString() : 'never'}</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px">
+          🖥 Local Snapshots <span style="font-weight:400;color:var(--muted)">(last ${MAX_LOCAL_SNAPS}, this device)</span>
+        </div>
+        ${localSnaps.length ? localSnaps.map((s,i) => `
+          <div style="padding:10px 12px;border-radius:8px;border:1.5px solid var(--light-border);margin-bottom:6px;background:var(--parchment)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+              <div>
+                <div style="font-size:12px;font-weight:700;color:var(--ink)">${esc(s.label)}</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px">${new Date(s.ts).toLocaleString()} · ${s.zoneCount} zones · ${esc(s.user)}</div>
+              </div>
+              <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;white-space:nowrap" onclick="restoreLocalSnap(${i})">↩ Restore</button>
+            </div>
+          </div>`).join('') : '<div style="color:var(--muted);font-size:11px;padding:12px">No local snapshots yet — click "Create Backup Now"</div>'}
+      </div>
+
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px">
+          ☁ Cloud Snapshots <span style="font-weight:400;color:var(--muted)">(last ${MAX_CLOUD_SNAPS}, all devices)</span>
+        </div>
+        ${cloudSnaps.length ? cloudSnaps.map((s,i) => `
+          <div style="padding:10px 12px;border-radius:8px;border:1.5px solid var(--light-border);margin-bottom:6px;background:var(--parchment)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+              <div>
+                <div style="font-size:12px;font-weight:700;color:var(--ink)">${esc(s.label)}</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px">${new Date(s.ts).toLocaleString()} · ${s.zoneCount} zones · ${esc(s.user)}</div>
+              </div>
+              <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;white-space:nowrap" onclick="restoreCloudSnap(${i})">↩ Restore</button>
+            </div>
+          </div>`).join('') : '<div style="color:var(--muted);font-size:11px;padding:12px">No cloud snapshots yet</div>'}
+      </div>
+
+    </div>
+  `;
+}
+
+async function adminManualBackup() {
+  showInlineDialog({ title: 'Create Backup', msg: 'Enter a label for this backup:', input: true, placeholder: 'e.g. Before big changes', defaultVal: `Manual · ${new Date().toLocaleDateString()}`, okText: 'Save', cancelText: 'Cancel',
+    onOk: async (label) => {
+      const lbl = label || `Manual · ${new Date().toLocaleDateString()}`;
+      saveLocalSnap(lbl);
+      await saveCloudSnap(lbl);
+      localStorage.setItem(LAST_BACKUP_KEY, String(Date.now()));
+      logAudit('bulk_edit', 'Backup', `Manual backup created: ${lbl}`);
+      renderBackupsPanel();
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
 // FIREBASE REST SYNC  — no SDK, plain fetch()
 // ═══════════════════════════════════════════════════════════
 const SCHEMA_VERSION = 2;
@@ -2313,7 +2507,11 @@ const FB_DOC_URL     = `https://firestore.googleapis.com/v1/projects/${FB_PROJEC
 const FB_AUTH_URL    = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_API_KEY}`;
 const FB_REFRESH_URL = `https://securetoken.googleapis.com/v1/token?key=${FB_API_KEY}`;
 const FB_USERS_URL   = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/config/users`;
-const FB_AUDIT_URL   = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/audit/log`;
+const FB_AUDIT_URL    = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/audit/log`;
+const FB_BACKUPS_URL  = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/backups/snapshots`;
+const LOCAL_SNAP_KEY  = 'lovejoy_snapshots';
+const MAX_LOCAL_SNAPS = 5;
+const MAX_CLOUD_SNAPS = 10;
 
 let savePending  = null;
 let connectTimer = null;
@@ -2512,6 +2710,7 @@ async function doConnect(pendingCrash, attempt = 1) {
     connecting = false;
     setDbStatus('live', migrated.lastEditedBy);
     startPolling();
+    maybeAutoBackup(); // daily auto-backup after successful connect
   } catch(e) {
     console.warn(`[SYNC] connect failed (attempt ${attempt}):`, e.message || e);
     if (attempt < 2) {
@@ -2586,6 +2785,7 @@ function buildPayload() {
 // RESET FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 function resetToDefaults() {
+  saveLocalSnap('Before factory reset'); saveCloudSnap('Before factory reset');
   logAudit('factory_reset', 'All data', `Factory reset by ${getUserName()}`);
   zones = DEFAULT_ZONES.map(z=>({...z})); nextId=100; season='Spring';
   undoStack=[]; updateUndoBtn();
@@ -3993,7 +4193,8 @@ function importData(e) {
     try {
       const d = JSON.parse(ev.target.result);
       if(!d.zones) { alert('Invalid file – no zones found.'); return; }
-      showInlineDialog({title:'Import Data',msg:`Import ${d.zones.length} zones? This will replace all current data.`,okText:'Import',cancelText:'Cancel',onOk:()=>{
+      showInlineDialog({title:'Import Data',msg:`Import ${d.zones.length} zones? This will replace all current data.`,okText:'Import',cancelText:'Cancel',onOk:async ()=>{
+        saveLocalSnap('Before import'); saveCloudSnap('Before import');
         pushUndo('Import data');
         logAudit('import', 'All data', `Imported ${d.zones.length} zones from file`);
         zones=d.zones; season=d.season||'Spring'; nextId=d.nextId||100;
