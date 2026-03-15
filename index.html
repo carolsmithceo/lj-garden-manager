@@ -1794,6 +1794,7 @@ const DEFAULT_USERS = [
   { id: 'carol',   name: 'Carol',   role: 'superadmin', pwHash: '', active: true },
   { id: 'alex',    name: 'Alex',    role: 'superadmin', pwHash: '', active: true },
   { id: 'zachary', name: 'Zachary', role: 'user',       pwHash: '', active: true },
+  { id: 'keith',   name: 'Keith',   role: 'superadmin', pwHash: '', active: true },
 ];
 // pwHash will be set to sha256('admin') for carol/alex on first init
 
@@ -1858,14 +1859,30 @@ async function fbWriteUsers(data) {
 }
 
 async function initUsers() {
+  const adminHash = await sha256('admin');
   // Try to load users from Firebase
   const cloud = await fbReadUsers();
   if (cloud && cloud.users && cloud.users.length > 0) {
     appUsers = cloud.users;
+    // Merge in any DEFAULT_USERS not yet in cloud (e.g. newly added accounts like Keith)
+    let changed = false;
+    for (const def of DEFAULT_USERS) {
+      if (!appUsers.find(u => u.id === def.id)) {
+        appUsers.push({
+          ...def,
+          pwHash: (def.role === 'superadmin') ? adminHash : '',
+          createdAt: Date.now(),
+          lastLogin: null,
+        });
+        changed = true;
+      }
+    }
+    if (changed) {
+      try { await fbWriteUsers({ users: appUsers }); } catch(e) {}
+    }
     return;
   }
-  // First run: create defaults with hashed passwords
-  const adminHash = await sha256('admin');
+  // First run: create all defaults with hashed passwords
   appUsers = DEFAULT_USERS.map(u => ({
     ...u,
     pwHash: (u.role === 'superadmin') ? adminHash : '',
