@@ -774,6 +774,176 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   #propmap-map { order: 1; flex: 1; min-height: 260px; }
 }
 
+/* ── LOGIN OVERLAY ────────────────────────────────────────── */
+#login-overlay {
+  display:none; position:fixed; inset:0; z-index:600;
+  background:linear-gradient(160deg,#f0f9f0 0%,#e8f5e9 100%);
+  align-items:center; justify-content:center; font-family:'Nunito',sans-serif;
+}
+#login-overlay.visible { display:flex; }
+.login-card {
+  background:#fff; border-radius:24px; padding:40px 36px 32px;
+  max-width:380px; width:92%; text-align:center;
+  box-shadow:0 16px 56px rgba(30,80,35,0.13);
+  border:1.5px solid rgba(102,187,106,0.22);
+}
+.login-card .logo { font-size:36px; margin-bottom:10px; }
+.login-card h1 {
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:24px; font-weight:600; color:#1b2e1c; margin-bottom:4px;
+}
+.login-card .subtitle { font-size:11px; color:#5a7a5c; letter-spacing:1px; margin-bottom:28px; }
+.login-user-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
+.login-user-btn {
+  padding:14px 10px; border-radius:12px; border:2px solid #c8e6c9;
+  background:#f4fbf5; font-size:14px; font-weight:700; color:#1b2e1c;
+  cursor:pointer; transition:all 0.15s; display:flex; flex-direction:column;
+  align-items:center; gap:4px;
+}
+.login-user-btn:hover { border-color:#66bb6a; background:#e8f5e9; }
+.login-user-btn.selected { border-color:#2e7d32; background:#e8f5e9; box-shadow:0 0 0 3px rgba(46,125,50,0.15); }
+.login-user-btn .u-name { font-size:15px; }
+.login-user-btn .u-role {
+  font-size:9px; letter-spacing:1px; padding:2px 7px; border-radius:20px;
+  font-weight:700;
+}
+.login-user-btn .u-role.superadmin { background:#fff3e0; color:#e65100; }
+.login-user-btn .u-role.user { background:#e8f5e9; color:#2e7d32; }
+.login-user-btn.full-width { grid-column:1/-1; }
+#login-pw-wrap {
+  display:none; margin-bottom:16px;
+  position:relative;
+}
+#login-pw-wrap input {
+  width:100%; padding:12px 40px 12px 16px; font-size:15px;
+  font-family:'Nunito',sans-serif; border:1.5px solid #c8e6c9;
+  border-radius:12px; outline:none; color:#1b2e1c; box-sizing:border-box;
+  transition:border-color 0.15s;
+}
+#login-pw-wrap input:focus { border-color:#66bb6a; }
+#login-pw-toggle {
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  background:none; border:none; cursor:pointer; font-size:16px; color:#888;
+}
+#login-error { font-size:12px; color:#c62828; min-height:18px; margin-bottom:12px; }
+#login-submit {
+  width:100%; padding:13px; font-size:14px; font-weight:700;
+  background:linear-gradient(135deg,#66bb6a,#388e3c);
+  color:#fff; border:none; border-radius:14px; cursor:pointer;
+  letter-spacing:0.5px; box-shadow:0 2px 10px rgba(56,142,60,0.25);
+  transition:all 0.15s; display:none;
+}
+#login-submit:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(56,142,60,0.3); }
+
+/* ── ROLE BADGES ──────────────────────────────────────────── */
+.role-chip {
+  display:inline-block; font-size:9px; font-weight:700; letter-spacing:1px;
+  padding:2px 7px; border-radius:20px; vertical-align:middle; margin-left:4px;
+  text-transform:uppercase;
+}
+.role-chip.superadmin { background:#fff3e0; color:#e65100; border:1px solid #ffcc80; }
+.role-chip.user { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+
+/* ── ADMIN CONSOLE ────────────────────────────────────────── */
+.admin-sub-nav {
+  display:flex; gap:4px; flex-wrap:wrap; margin-bottom:20px;
+  border-bottom:2px solid var(--light-border); padding-bottom:8px;
+}
+.admin-sub-btn {
+  font-family:'Nunito',sans-serif; font-size:11px; font-weight:700;
+  padding:6px 14px; border-radius:8px 8px 0 0; border:1.5px solid transparent;
+  background:transparent; color:var(--muted); cursor:pointer; letter-spacing:0.5px;
+  transition:all 0.15s; margin-bottom:-2px;
+}
+.admin-sub-btn:hover { color:var(--deep-rose); background:var(--lavender); }
+.admin-sub-btn.active {
+  color:var(--deep-rose); background:#fff;
+  border-color:var(--light-border); border-bottom-color:#fff;
+}
+.admin-sub-panel { display:none; }
+.admin-sub-panel.active { display:block; }
+
+/* ── AUDIT LOG ────────────────────────────────────────────── */
+.audit-wrap { overflow-x:auto; max-height:480px; overflow-y:auto; border-radius:10px; border:1.5px solid var(--light-border); }
+.audit-tbl { width:100%; border-collapse:collapse; font-size:11px; }
+.audit-tbl th {
+  background:var(--lavender); color:var(--ink); font-weight:700;
+  padding:8px 10px; text-align:left; position:sticky; top:0; z-index:1;
+  border-bottom:1.5px solid var(--light-border); letter-spacing:0.5px; font-size:10px;
+}
+.audit-tbl td { padding:7px 10px; border-bottom:1px solid rgba(102,187,106,0.1); color:var(--ink); vertical-align:top; }
+.audit-tbl tr:hover td { background:rgba(102,187,106,0.05); }
+.audit-tbl tr:last-child td { border-bottom:none; }
+.audit-action {
+  display:inline-block; font-size:9px; font-weight:700; letter-spacing:0.5px;
+  padding:2px 7px; border-radius:20px; white-space:nowrap;
+}
+.audit-action.zone_edit    { background:#e3f2fd; color:#1565c0; }
+.audit-action.zone_add     { background:#e8f5e9; color:#2e7d32; }
+.audit-action.zone_delete  { background:#fce4ec; color:#c62828; }
+.audit-action.zone_dup     { background:#f3e5f5; color:#6a1b9a; }
+.audit-action.login        { background:#e0f7fa; color:#006064; }
+.audit-action.logout       { background:#fff3e0; color:#e65100; }
+.audit-action.import       { background:#fff9c4; color:#f57f17; }
+.audit-action.factory_reset { background:#fce4ec; color:#b71c1c; }
+.audit-action.undo         { background:#f5f5f5; color:#424242; }
+.audit-action.user_added   { background:#e8f5e9; color:#1b5e20; }
+.audit-action.user_edited  { background:#e3f2fd; color:#0d47a1; }
+.audit-action.user_deleted { background:#fce4ec; color:#b71c1c; }
+.audit-action.season_change { background:#fffde7; color:#f57f17; }
+.audit-action.map_reset    { background:#f3e5f5; color:#4a148c; }
+.audit-action.bulk_edit    { background:#e0f2f1; color:#004d40; }
+.audit-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+.audit-filters select, .audit-filters input {
+  font-family:'Nunito',sans-serif; font-size:11px; padding:5px 10px;
+  border:1.5px solid var(--light-border); border-radius:8px; color:var(--ink);
+  background:#fff; outline:none;
+}
+
+/* ── USER MANAGEMENT ──────────────────────────────────────── */
+.user-tbl-wrap { border-radius:10px; border:1.5px solid var(--light-border); overflow:hidden; }
+.user-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.user-tbl th {
+  background:var(--lavender); color:var(--ink); font-weight:700;
+  padding:9px 12px; text-align:left; font-size:10px; letter-spacing:0.5px;
+}
+.user-tbl td { padding:9px 12px; border-bottom:1px solid rgba(102,187,106,0.1); color:var(--ink); }
+.user-tbl tr:last-child td { border-bottom:none; }
+.user-tbl tr:hover td { background:rgba(102,187,106,0.05); }
+
+/* ── HISTORY PANEL ────────────────────────────────────────── */
+.history-wrap { max-height:400px; overflow-y:auto; }
+.history-entry {
+  display:flex; align-items:flex-start; gap:10px; padding:9px 12px;
+  border-radius:8px; margin-bottom:4px; border:1px solid transparent;
+  transition:all 0.15s; cursor:pointer;
+}
+.history-entry:hover { background:var(--lavender); border-color:var(--light-border); }
+.history-entry .h-num {
+  font-size:10px; font-weight:700; color:var(--muted); min-width:22px;
+  margin-top:2px;
+}
+.history-entry .h-body { flex:1; }
+.history-entry .h-desc { font-size:12px; font-weight:600; color:var(--ink); }
+.history-entry .h-meta { font-size:10px; color:var(--muted); margin-top:2px; }
+.history-entry .h-restore {
+  font-size:10px; font-weight:700; padding:3px 10px;
+  border-radius:8px; border:1.5px solid var(--light-border);
+  background:var(--parchment); color:var(--deep-rose); cursor:pointer;
+  white-space:nowrap; transition:all 0.15s;
+}
+.history-entry .h-restore:hover { background:var(--lavender); }
+
+/* ── OVERVIEW CARDS ───────────────────────────────────────── */
+.overview-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-bottom:20px; }
+.ov-card {
+  background:var(--parchment); border-radius:12px; padding:14px 16px;
+  border:1.5px solid var(--light-border);
+}
+.ov-card .ov-label { font-size:9px; font-weight:700; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
+.ov-card .ov-val { font-size:18px; font-weight:700; color:var(--deep-rose); }
+.ov-card .ov-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+
 </style>
 <!-- Firebase SDK -->
 </head>
@@ -792,6 +962,22 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     <button class="btn btn-ghost btn-sm" onclick="document.getElementById('install-prompt').classList.remove('visible')">Later</button>
   </div>
 </div>
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="logo">🌿</div>
+    <h1>Love Joy Farms</h1>
+    <div class="subtitle">SELECT YOUR ACCOUNT</div>
+    <div class="login-user-grid" id="login-user-grid"></div>
+    <div id="login-pw-wrap">
+      <input type="password" id="login-pw" placeholder="Enter password…" onkeydown="if(event.key==='Enter')doLogin()">
+      <button id="login-pw-toggle" type="button" onclick="toggleLoginPw()" title="Show/hide password">👁</button>
+    </div>
+    <div id="login-error"></div>
+    <button id="login-submit" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
 <!-- CONNECTION GATE OVERLAY -->
 <div id="connect-overlay" style="
   display:none; position:fixed; top:0;left:0;width:100%;height:100%; z-index:500;
@@ -891,7 +1077,7 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   <button class="tab-btn" onclick="showTab('print')">PRINT</button>
   <button class="tab-btn" onclick="showTab('help')">HELP</button>
   <button class="tab-btn" onclick="showTab('propmap')">PROPERTY MAP</button>
-  <button class="tab-btn" onclick="showTab('dev')" style="color:var(--deep-sage);letter-spacing:1px">⚙ DEV</button>
+  <button class="tab-btn" id="admin-tab-btn" onclick="showTab('dev')" style="color:var(--deep-sage);letter-spacing:1px;display:none">⚙ ADMIN</button>
 </div>
 
 <!-- SCHEDULE TAB -->
@@ -1185,85 +1371,214 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 <!-- DEV TAB -->
 <div id="tab-dev" class="tab-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;padding:12px 16px;background:rgba(125,158,128,0.07);border-radius:10px;border-left:3px solid var(--sage)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">⚙</span>
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--ink)">Admin Console</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">Full system control · Super Admins only</div>
+      </div>
+    </div>
+    <div id="admin-cur-user" style="font-size:11px;color:var(--muted)"></div>
+  </div>
 
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:12px 16px;background:rgba(125,158,128,0.07);border-radius:10px;border-left:3px solid var(--sage)">
-    <span style="font-size:18px">⚙</span>
-    <div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--ink)">Developer Override Console</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:2px">Direct database and application control. Changes take immediate effect and sync to all devices.</div>
+  <!-- Sub-tab nav -->
+  <div class="admin-sub-nav">
+    <button class="admin-sub-btn active" onclick="showAdminTab('overview')">📊 Overview</button>
+    <button class="admin-sub-btn" onclick="showAdminTab('users')">👥 Users</button>
+    <button class="admin-sub-btn" onclick="showAdminTab('audit')">📋 Audit Log</button>
+    <button class="admin-sub-btn" onclick="showAdminTab('history')">↩ Undo History</button>
+    <button class="admin-sub-btn" onclick="showAdminTab('data')">🗄 Data</button>
+    <button class="admin-sub-btn" onclick="showAdminTab('firebase')">☁ Firebase</button>
+    <button class="admin-sub-btn" onclick="showAdminTab('system')">🖥 System</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="admin-sub-panel active" id="asub-overview">
+    <div class="overview-grid" id="ov-grid"></div>
+    <div class="help-section" style="margin-top:0">
+      <h3>QUICK ACTIONS</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="adminRefreshOverview()">⟳ Refresh Stats</button>
+        <button class="btn btn-ghost" onclick="showAdminTab('audit')">📋 View Audit Log</button>
+        <button class="btn btn-ghost" onclick="showAdminTab('users')">👥 Manage Users</button>
+        <button class="btn btn-ghost" onclick="adminExportAll()">↓ Export Full Backup</button>
+      </div>
     </div>
   </div>
 
-  <!-- ── DATA MANAGEMENT ─────────────────────────────────── -->
-  <div class="help-section">
-    <h3>DATA MANAGEMENT</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
-      <button class="btn btn-ghost" onclick="devResetMaps()">↺ Reset Map Positions</button>
-      <button class="btn btn-ghost" onclick="devResetAll()">↺ Factory Reset All Data</button>
-      <button class="btn btn-ghost" onclick="devClearLocalStorage()">🗑 Clear LocalStorage</button>
-      <button class="btn btn-ghost" onclick="devClearCrashFile()">🗑 Clear Crash File</button>
-      <button class="btn btn-ghost" onclick="devExportRaw()">↓ Export Raw JSON</button>
+  <!-- USERS -->
+  <div class="admin-sub-panel" id="asub-users">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--ink)">User Accounts</div>
+      <button class="btn btn-primary" onclick="adminShowAddUser()">+ Add User</button>
     </div>
-    <div id="dev-data-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+    <div class="user-tbl-wrap">
+      <table class="user-tbl">
+        <thead><tr>
+          <th>Name</th><th>Role</th><th>Password</th><th>Last Login</th><th>Created</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+    </div>
+    <!-- Add/Edit user form -->
+    <div id="user-edit-form" style="display:none;margin-top:16px;padding:16px;background:var(--parchment);border-radius:12px;border:1.5px solid var(--light-border)">
+      <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:12px" id="user-form-title">Add User</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.5px">DISPLAY NAME</label>
+          <input type="text" id="uf-name" placeholder="e.g. Jordan"
+            style="display:block;width:100%;margin-top:4px;padding:8px 12px;font-size:13px;font-family:'Nunito',sans-serif;border:1.5px solid var(--light-border);border-radius:8px;outline:none;color:var(--ink)">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.5px">ROLE</label>
+          <select id="uf-role"
+            style="display:block;width:100%;margin-top:4px;padding:8px 12px;font-size:13px;font-family:'Nunito',sans-serif;border:1.5px solid var(--light-border);border-radius:8px;outline:none;color:var(--ink);background:#fff">
+            <option value="user">Regular User</option>
+            <option value="superadmin">Super Admin</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.5px">PASSWORD (leave blank = no password)</label>
+          <input type="password" id="uf-pw" placeholder="Leave blank for no password"
+            style="display:block;width:100%;margin-top:4px;padding:8px 12px;font-size:13px;font-family:'Nunito',sans-serif;border:1.5px solid var(--light-border);border-radius:8px;outline:none;color:var(--ink)">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.5px">STATUS</label>
+          <select id="uf-active"
+            style="display:block;width:100%;margin-top:4px;padding:8px 12px;font-size:13px;font-family:'Nunito',sans-serif;border:1.5px solid var(--light-border);border-radius:8px;outline:none;color:var(--ink);background:#fff">
+            <option value="true">Active</option>
+            <option value="false">Disabled</option>
+          </select>
+        </div>
+      </div>
+      <input type="hidden" id="uf-id">
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="adminSaveUser()">Save User</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('user-edit-form').style.display='none'">Cancel</button>
+      </div>
+      <div id="uf-status" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:16px"></div>
+    </div>
   </div>
 
-  <!-- ── FIREBASE ────────────────────────────────────────── -->
-  <div class="help-section">
-    <h3>FIREBASE</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
-      <button class="btn btn-ghost" onclick="devForceSync()">⟳ Force Cloud Sync</button>
-      <button class="btn btn-ghost" onclick="devPushDefaults()">↑ Push Defaults to Cloud</button>
-      <button class="btn btn-ghost" onclick="devReadCloud()">↓ Read Cloud → Console</button>
-      <button class="btn btn-ghost" onclick="devDeleteCloud()">🗑 Delete Cloud Document</button>
+  <!-- AUDIT LOG -->
+  <div class="admin-sub-panel" id="asub-audit">
+    <div class="audit-filters">
+      <input type="text" id="audit-search" placeholder="Search…" oninput="renderAuditLog()" style="flex:1;min-width:140px">
+      <select id="audit-filter-user" onchange="renderAuditLog()"><option value="">All Users</option></select>
+      <select id="audit-filter-action" onchange="renderAuditLog()"><option value="">All Actions</option></select>
+      <button class="btn btn-ghost" onclick="loadAndRenderAudit()" style="font-size:11px;padding:5px 12px">⟳ Refresh</button>
+      <button class="btn btn-ghost" onclick="adminExportAudit()" style="font-size:11px;padding:5px 12px">↓ Export</button>
     </div>
-    <div id="dev-fb-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+    <div id="audit-count" style="font-size:10px;color:var(--muted);margin-bottom:8px"></div>
+    <div class="audit-wrap">
+      <table class="audit-tbl">
+        <thead><tr>
+          <th style="width:130px">TIME</th>
+          <th style="width:80px">USER</th>
+          <th style="width:100px">ACTION</th>
+          <th>TARGET</th>
+          <th>DETAIL</th>
+        </tr></thead>
+        <tbody id="audit-tbody"></tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- ── SCHEMA ──────────────────────────────────────────── -->
-  <div class="help-section">
-    <h3>SCHEMA & MIGRATION</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
-      <button class="btn btn-ghost" onclick="devRunMigrate()">▶ Run migrate() on Local Data</button>
-      <button class="btn btn-ghost" onclick="devBumpSchema()">▶ Force Schema v→v+1</button>
-      <button class="btn btn-ghost" onclick="devShowSchema()">👁 Show Zone Schema</button>
+  <!-- UNDO HISTORY -->
+  <div class="admin-sub-panel" id="asub-history">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--ink)">Undo History</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">Click any entry to restore that state. Current session only — up to 50 steps.</div>
+      </div>
+      <button class="btn btn-ghost" onclick="devClearUndo()" style="font-size:11px">🗑 Clear All</button>
     </div>
-    <div id="dev-schema-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+    <div class="history-wrap" id="history-list"></div>
   </div>
 
-  <!-- ── ZONE BULK EDIT ──────────────────────────────────── -->
-  <div class="help-section">
-    <h3>BULK ZONE OPERATIONS</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
-      <button class="btn btn-ghost" onclick="devClearAllMapPositions()">Clear All Map Positions</button>
-      <button class="btn btn-ghost" onclick="devNormalizeZones()">Normalize All Zones (fill defaults)</button>
-      <button class="btn btn-ghost" onclick="devListErrors()">List All Validation Errors</button>
-      <button class="btn btn-ghost" onclick="devCountZones()">Zone Stats → Console</button>
+  <!-- DATA MANAGEMENT -->
+  <div class="admin-sub-panel" id="asub-data">
+    <div class="help-section" style="margin-top:0">
+      <h3>DATA MANAGEMENT</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <button class="btn btn-ghost" onclick="devResetMaps()">↺ Reset Map Positions</button>
+        <button class="btn btn-danger" onclick="devResetAll()">↺ Factory Reset All Data</button>
+        <button class="btn btn-ghost" onclick="devClearLocalStorage()">🗑 Clear LocalStorage</button>
+        <button class="btn btn-ghost" onclick="devClearCrashFile()">🗑 Clear Crash File</button>
+        <button class="btn btn-ghost" onclick="devExportRaw()">↓ Export Raw JSON</button>
+      </div>
+      <div id="dev-data-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
     </div>
-    <div id="dev-zone-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+    <div class="help-section">
+      <h3>BULK ZONE OPERATIONS</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <button class="btn btn-ghost" onclick="devClearAllMapPositions()">Clear All Map Positions</button>
+        <button class="btn btn-ghost" onclick="devNormalizeZones()">Normalize All Zones</button>
+        <button class="btn btn-ghost" onclick="devListErrors()">List Validation Errors</button>
+        <button class="btn btn-ghost" onclick="devCountZones()">Zone Stats → Console</button>
+      </div>
+      <div id="dev-zone-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+    </div>
+    <div class="help-section">
+      <h3>LIVE JSON EDITOR</h3>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Paste raw JSON zone array to override all zones.</div>
+      <textarea id="dev-json-editor" style="width:100%;height:160px;font-family:'Courier New',monospace;font-size:11px;background:rgba(0,0,0,0.03);border:1.5px solid var(--light-border);border-radius:8px;padding:10px;color:var(--ink);resize:vertical" placeholder='Paste zones JSON array here…'></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-ghost" onclick="devLoadToEditor()">Load Current → Editor</button>
+        <button class="btn btn-primary" onclick="devApplyEditor()">▶ Apply JSON</button>
+      </div>
+      <div id="dev-editor-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+    </div>
+    <div class="help-section">
+      <h3>SCHEMA & MIGRATION</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <button class="btn btn-ghost" onclick="devRunMigrate()">▶ Run migrate() on Local Data</button>
+        <button class="btn btn-ghost" onclick="devBumpSchema()">▶ Force Schema v→v+1</button>
+        <button class="btn btn-ghost" onclick="devShowSchema()">👁 Show Zone Schema</button>
+      </div>
+      <div id="dev-schema-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+    </div>
   </div>
 
-  <!-- ── LIVE EDITOR ─────────────────────────────────────── -->
-  <div class="help-section">
-    <h3>LIVE JSON EDITOR</h3>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Paste raw JSON zone array below and click Apply to override all zones. Useful for bulk imports or emergency fixes.</div>
-    <textarea id="dev-json-editor" style="width:100%;height:180px;font-family:'Courier New',monospace;font-size:11px;background:rgba(0,0,0,0.03);border:1.5px solid var(--light-border);border-radius:8px;padding:10px;color:var(--ink);resize:vertical" placeholder='Paste zones JSON array here…'></textarea>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn btn-ghost" onclick="devLoadToEditor()">Load Current → Editor</button>
-      <button class="btn btn-primary" onclick="devApplyEditor()">▶ Apply JSON</button>
+  <!-- FIREBASE -->
+  <div class="admin-sub-panel" id="asub-firebase">
+    <div class="help-section" style="margin-top:0">
+      <h3>FIREBASE OPERATIONS</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <button class="btn btn-ghost" onclick="devForceSync()">⟳ Force Cloud Sync</button>
+        <button class="btn btn-ghost" onclick="devPushDefaults()">↑ Push Defaults to Cloud</button>
+        <button class="btn btn-ghost" onclick="devReadCloud()">↓ Read Cloud → Console</button>
+        <button class="btn btn-ghost" onclick="adminSyncUsersToCloud()">↑ Push Users to Cloud</button>
+        <button class="btn btn-ghost" onclick="adminReadUsersCloud()">↓ Read Users Cloud</button>
+        <button class="btn btn-danger" onclick="devDeleteCloud()">🗑 Delete App Data Doc</button>
+      </div>
+      <div id="dev-fb-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
     </div>
-    <div id="dev-editor-status" style="font-size:10px;color:var(--muted);min-height:18px;margin-top:4px"></div>
+    <div class="help-section">
+      <h3>CONNECTION STATUS</h3>
+      <div id="admin-fb-info" style="font-size:11px;color:var(--muted);line-height:1.8;font-family:'Courier New',monospace;background:var(--parchment);padding:12px;border-radius:8px;border:1.5px solid var(--light-border)"></div>
+      <button class="btn btn-ghost" style="margin-top:8px" onclick="adminRefreshFbInfo()">⟳ Refresh</button>
+    </div>
   </div>
 
-  <!-- ── APP STATE ───────────────────────────────────────── -->
-  <div class="help-section">
-    <h3>APP STATE</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
-      <button class="btn btn-ghost" onclick="devShowState()">👁 Show App State → Console</button>
-      <button class="btn btn-ghost" onclick="devReloadPage()">↺ Hard Reload Page</button>
-      <button class="btn btn-ghost" onclick="devToggleOffline()">⚡ Toggle Offline Mode</button>
-      <button class="btn btn-ghost" onclick="devClearUndo()">🗑 Clear Undo Stack</button>
+  <!-- SYSTEM -->
+  <div class="admin-sub-panel" id="asub-system">
+    <div class="help-section" style="margin-top:0">
+      <h3>APP STATE</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <button class="btn btn-ghost" onclick="devShowState()">👁 Show State → Console</button>
+        <button class="btn btn-ghost" onclick="devReloadPage()">↺ Hard Reload</button>
+        <button class="btn btn-ghost" onclick="devToggleOffline()">⚡ Toggle Offline Mode</button>
+        <button class="btn btn-ghost" onclick="devClearUndo()">🗑 Clear Undo Stack</button>
+        <button class="btn btn-ghost" onclick="adminLogout()">🚪 Log Out</button>
+      </div>
+      <pre id="dev-state-pre" style="font-size:10px;font-family:'Courier New',monospace;background:rgba(0,0,0,0.03);border-radius:8px;padding:10px;max-height:200px;overflow:auto;border:1.5px solid var(--light-border);white-space:pre-wrap;display:none"></pre>
     </div>
-    <pre id="dev-state-pre" style="font-size:10px;font-family:'Courier New',monospace;background:rgba(0,0,0,0.03);border-radius:8px;padding:10px;max-height:200px;overflow:auto;border:1.5px solid var(--light-border);white-space:pre-wrap;display:none"></pre>
+    <div class="help-section">
+      <h3>SESSION INFO</h3>
+      <div id="session-info" style="font-size:11px;color:var(--muted);line-height:1.8;font-family:'Courier New',monospace;background:var(--parchment);padding:12px;border-radius:8px;border:1.5px solid var(--light-border)"></div>
+    </div>
   </div>
 
 </div>
@@ -1468,45 +1783,499 @@ function escUrl(str) {
   return esc(s);
 }
 
-function getUserName() {
-  return localStorage.getItem('lovejoy_user') || 'User';
+// ═══════════════════════════════════════════════════════════
+// USER AUTH SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+const SESSION_KEY = 'lovejoy_session';
+const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 hours
+
+const DEFAULT_USERS = [
+  { id: 'carol',   name: 'Carol',   role: 'superadmin', pwHash: '', active: true },
+  { id: 'alex',    name: 'Alex',    role: 'superadmin', pwHash: '', active: true },
+  { id: 'zachary', name: 'Zachary', role: 'user',       pwHash: '', active: true },
+];
+// pwHash will be set to sha256('admin') for carol/alex on first init
+
+let appUsers     = [];   // loaded from Firebase
+let currentUser  = null; // { id, name, role }
+let loginCallback = null; // called after successful login
+
+async function sha256(str) {
+  if (!str) return '';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-let _userPickerCallback = null;
-function _pickUser(name) {
-  localStorage.setItem('lovejoy_user', name);
-  document.getElementById('user-picker-overlay').style.display = 'none';
-  const badge = document.getElementById('user-badge');
-  if (badge) badge.textContent = '👤 ' + name;
-  if (_userPickerCallback) { _userPickerCallback(name); _userPickerCallback = null; }
+function getSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (!s) return null;
+    if (Date.now() > s.expires) { localStorage.removeItem(SESSION_KEY); return null; }
+    return s;
+  } catch(e) { return null; }
 }
-function switchUser() { promptUserName(null, true); }
+
+function saveSession(user) {
+  const s = { id: user.id, name: user.name, role: user.role, loginTime: Date.now(), expires: Date.now() + SESSION_TTL };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+  currentUser = { id: user.id, name: user.name, role: user.role };
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+  currentUser = null;
+}
+
+function getUserName() {
+  return currentUser ? currentUser.name : (getSession()?.name || 'User');
+}
+
+function isSuperAdmin() {
+  return currentUser && currentUser.role === 'superadmin';
+}
+
+// ── Load / save users from Firebase ──────────────────────────
+async function fbReadUsers() {
+  try {
+    await ensureAuth();
+    const r = await fetchWithTimeout(`${FB_USERS_URL}?key=${FB_API_KEY}`, { mode:'cors', credentials:'omit', headers:{'Authorization':`Bearer ${fbIdToken}`} });
+    if (r.status === 404) return null;
+    if (!r.ok) return null;
+    const doc = await r.json();
+    return fromFsDoc(doc);
+  } catch(e) { return null; }
+}
+
+async function fbWriteUsers(data) {
+  await ensureAuth();
+  const r = await fetchWithTimeout(`${FB_USERS_URL}?key=${FB_API_KEY}`, {
+    method:'PATCH', mode:'cors', credentials:'omit',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${fbIdToken}`},
+    body: JSON.stringify(toFsDoc(data))
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+}
+
+async function initUsers() {
+  // Try to load users from Firebase
+  const cloud = await fbReadUsers();
+  if (cloud && cloud.users && cloud.users.length > 0) {
+    appUsers = cloud.users;
+    return;
+  }
+  // First run: create defaults with hashed passwords
+  const adminHash = await sha256('admin');
+  appUsers = DEFAULT_USERS.map(u => ({
+    ...u,
+    pwHash: (u.role === 'superadmin') ? adminHash : '',
+    createdAt: Date.now(),
+    lastLogin: null,
+  }));
+  try { await fbWriteUsers({ users: appUsers }); } catch(e) {}
+}
+
+// ── Login UI ──────────────────────────────────────────────────
+let loginSelectedUser = null;
+
+function showLoginOverlay(cb) {
+  loginCallback = cb || null;
+  const overlay = document.getElementById('login-overlay');
+  overlay.classList.add('visible');
+  buildLoginUserGrid();
+  loginSelectedUser = null;
+  document.getElementById('login-pw-wrap').style.display = 'none';
+  document.getElementById('login-submit').style.display = 'none';
+  document.getElementById('login-error').textContent = '';
+}
+
+function buildLoginUserGrid() {
+  const grid = document.getElementById('login-user-grid');
+  const active = appUsers.filter(u => u.active !== false);
+  grid.innerHTML = active.map(u => `
+    <button class="login-user-btn${active.length === 1 ? ' full-width' : ''}"
+      id="lbtn-${u.id}" onclick="selectLoginUser('${u.id}')">
+      <span class="u-name">👤 ${esc(u.name)}</span>
+      <span class="u-role ${u.role}">${u.role === 'superadmin' ? 'SUPER ADMIN' : 'USER'}</span>
+    </button>`).join('');
+}
+
+function selectLoginUser(userId) {
+  loginSelectedUser = appUsers.find(u => u.id === userId);
+  if (!loginSelectedUser) return;
+  // Highlight selection
+  document.querySelectorAll('.login-user-btn').forEach(b => b.classList.remove('selected'));
+  const btn = document.getElementById('lbtn-' + userId);
+  if (btn) btn.classList.add('selected');
+  document.getElementById('login-error').textContent = '';
+  const pwWrap = document.getElementById('login-pw-wrap');
+  const submitBtn = document.getElementById('login-submit');
+  if (loginSelectedUser.pwHash) {
+    pwWrap.style.display = 'block';
+    submitBtn.style.display = 'block';
+    submitBtn.textContent = `Sign in as ${loginSelectedUser.name}`;
+    document.getElementById('login-pw').value = '';
+    setTimeout(() => document.getElementById('login-pw').focus(), 80);
+  } else {
+    pwWrap.style.display = 'none';
+    submitBtn.style.display = 'block';
+    submitBtn.textContent = `Continue as ${loginSelectedUser.name}`;
+  }
+}
+
+function toggleLoginPw() {
+  const inp = document.getElementById('login-pw');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function doLogin() {
+  if (!loginSelectedUser) {
+    document.getElementById('login-error').textContent = 'Please select a user.';
+    return;
+  }
+  const user = loginSelectedUser;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (user.pwHash) {
+    const entered = document.getElementById('login-pw').value;
+    if (!entered) { errEl.textContent = 'Password required.'; return; }
+    const h = await sha256(entered);
+    if (h !== user.pwHash) {
+      errEl.textContent = 'Incorrect password. Try again.';
+      document.getElementById('login-pw').value = '';
+      document.getElementById('login-pw').focus();
+      return;
+    }
+  }
+  // Success
+  const updated = { ...user, lastLogin: Date.now() };
+  appUsers = appUsers.map(u => u.id === user.id ? updated : u);
+  saveSession(updated);
+  try { await fbWriteUsers({ users: appUsers }); } catch(e) {}
+  logAudit('login', user.name, `Signed in as ${user.name} (${user.role})`);
+  document.getElementById('login-overlay').classList.remove('visible');
+  updateUserBadge();
+  applyRoleVisibility();
+  if (loginCallback) { loginCallback(); loginCallback = null; }
+}
+
+function adminLogout() {
+  const name = getUserName();
+  logAudit('logout', name, `${name} signed out`);
+  clearSession();
+  currentUser = null;
+  // Rebuild login screen and show
+  showLoginOverlay(() => {
+    // After login, re-init app
+    initFirebase();
+  });
+}
+
 function updateUserBadge() {
   const badge = document.getElementById('user-badge');
-  if (badge) badge.textContent = '👤 ' + getUserName();
+  if (!badge) return;
+  const u = currentUser;
+  if (!u) { badge.textContent = '👤 —'; return; }
+  const chip = u.role === 'superadmin'
+    ? '<span class="role-chip superadmin">ADMIN</span>'
+    : '<span class="role-chip user">USER</span>';
+  badge.innerHTML = `👤 ${esc(u.name)}${chip}`;
+  badge.onclick = () => adminLogout();
+  badge.title = 'Sign out';
+  // Update admin console header
+  const adminCur = document.getElementById('admin-cur-user');
+  if (adminCur) adminCur.innerHTML = `Signed in as <strong>${esc(u.name)}</strong>${chip}`;
 }
-function promptUserName(callback, force) {
-  const existing = localStorage.getItem('lovejoy_user');
-  const allowed = ['Carol', 'Alex'];
-  if (!force && existing && allowed.map(n=>n.toLowerCase()).includes(existing.toLowerCase())) {
-    if (callback) callback(existing); return;
+
+function applyRoleVisibility() {
+  const isAdmin = isSuperAdmin();
+  const adminBtn = document.getElementById('admin-tab-btn');
+  if (adminBtn) adminBtn.style.display = isAdmin ? '' : 'none';
+}
+
+// ── User management (admin) ───────────────────────────────────
+function renderUsersTable() {
+  const tbody = document.getElementById('users-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = appUsers.map(u => `
+    <tr>
+      <td><strong>${esc(u.name)}</strong></td>
+      <td><span class="role-chip ${u.role}">${u.role === 'superadmin' ? 'SUPER ADMIN' : 'USER'}</span></td>
+      <td style="color:${u.pwHash ? 'var(--deep-rose)' : 'var(--muted)'}">${u.pwHash ? '●●●●●●' : 'No password'}</td>
+      <td>${u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '—'}</td>
+      <td>${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px" onclick="adminEditUser('${u.id}')">Edit</button>
+          ${u.id !== currentUser?.id ? `<button class="btn btn-danger" style="font-size:10px;padding:3px 10px" onclick="adminDeleteUser('${u.id}')">Delete</button>` : '<span style="font-size:10px;color:var(--muted)">(you)</span>'}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function adminShowAddUser() {
+  document.getElementById('user-form-title').textContent = 'Add New User';
+  document.getElementById('uf-id').value = '';
+  document.getElementById('uf-name').value = '';
+  document.getElementById('uf-role').value = 'user';
+  document.getElementById('uf-pw').value = '';
+  document.getElementById('uf-active').value = 'true';
+  document.getElementById('uf-status').textContent = '';
+  document.getElementById('user-edit-form').style.display = 'block';
+}
+
+function adminEditUser(userId) {
+  const u = appUsers.find(x => x.id === userId);
+  if (!u) return;
+  document.getElementById('user-form-title').textContent = `Edit: ${u.name}`;
+  document.getElementById('uf-id').value = u.id;
+  document.getElementById('uf-name').value = u.name;
+  document.getElementById('uf-role').value = u.role;
+  document.getElementById('uf-pw').value = '';
+  document.getElementById('uf-active').value = String(u.active !== false);
+  document.getElementById('uf-status').textContent = 'Leave password blank to keep unchanged.';
+  document.getElementById('user-edit-form').style.display = 'block';
+}
+
+async function adminSaveUser() {
+  const name = document.getElementById('uf-name').value.trim();
+  const role = document.getElementById('uf-role').value;
+  const pw   = document.getElementById('uf-pw').value;
+  const active = document.getElementById('uf-active').value === 'true';
+  const editId = document.getElementById('uf-id').value;
+  const statusEl = document.getElementById('uf-status');
+  if (!name) { statusEl.textContent = 'Name is required.'; return; }
+  statusEl.textContent = 'Saving…';
+  const pwHash = pw ? await sha256(pw) : (editId ? (appUsers.find(u=>u.id===editId)?.pwHash||'') : '');
+  if (editId) {
+    const before = appUsers.find(u => u.id === editId);
+    appUsers = appUsers.map(u => u.id === editId ? {...u, name, role, pwHash, active} : u);
+    logAudit('user_edited', name, `Role: ${before?.role}→${role}, PW: ${pw?'changed':'unchanged'}`);
+  } else {
+    const newUser = { id: name.toLowerCase().replace(/\s+/g,'_')+'_'+Date.now(), name, role, pwHash, active, createdAt: Date.now(), lastLogin: null };
+    appUsers.push(newUser);
+    logAudit('user_added', name, `New ${role} account created`);
   }
-  _userPickerCallback = callback || null;
-  let overlay = document.getElementById('user-picker-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'user-picker-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
-    overlay.innerHTML = `
-      <div style="background:#fff;border-radius:16px;padding:32px 24px;max-width:300px;width:88%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3);">
-        <div style="font-family:serif;font-size:22px;font-weight:700;color:#3d2b1f;margin-bottom:6px;">Love Joy Farms</div>
-        <div style="font-size:14px;color:#888;margin-bottom:24px;">Who are you?</div>
-        <button onclick="_pickUser('Carol')" style="display:block;width:100%;margin-bottom:12px;padding:14px;border-radius:10px;border:2px solid #c8a96e;background:#fffdf8;font-size:17px;font-weight:600;cursor:pointer;color:#3d2b1f;">Carol</button>
-        <button onclick="_pickUser('Alex')" style="display:block;width:100%;padding:14px;border-radius:10px;border:2px solid #c8a96e;background:#fffdf8;font-size:17px;font-weight:600;cursor:pointer;color:#3d2b1f;">Alex</button>
-      </div>`;
-    document.body.appendChild(overlay);
+  try {
+    await fbWriteUsers({ users: appUsers });
+    renderUsersTable();
+    buildLoginUserGrid();
+    document.getElementById('user-edit-form').style.display = 'none';
+    statusEl.textContent = '';
+  } catch(e) {
+    statusEl.textContent = 'Save failed: ' + e.message;
   }
-  overlay.style.display = 'flex';
+}
+
+async function adminDeleteUser(userId) {
+  const u = appUsers.find(x => x.id === userId);
+  if (!u) return;
+  showInlineDialog('Delete User', `Delete account for ${u.name}? This cannot be undone.`, false,
+    async () => {
+      appUsers = appUsers.filter(x => x.id !== userId);
+      logAudit('user_deleted', u.name, `Account deleted by ${getUserName()}`);
+      try { await fbWriteUsers({ users: appUsers }); } catch(e) {}
+      renderUsersTable();
+    }, null, 'Delete', 'Cancel');
+}
+
+async function adminSyncUsersToCloud() {
+  try { await fbWriteUsers({ users: appUsers }); devStatus('dev-fb-status','Users synced to cloud ✓'); }
+  catch(e) { devStatus('dev-fb-status','Failed: '+e.message, true); }
+}
+
+async function adminReadUsersCloud() {
+  const d = await fbReadUsers();
+  console.log('[ADMIN] Cloud users:', d);
+  devStatus('dev-fb-status', d ? `${d.users?.length||0} users in cloud → console` : 'Not found');
+}
+
+function switchUser() { adminLogout(); } // legacy compat
+
+// ═══════════════════════════════════════════════════════════
+// AUDIT LOG SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+let auditLog        = [];   // in-memory cache
+const MAX_AUDIT     = 500;
+let auditWritePending = null;
+
+async function fbReadAudit() {
+  try {
+    await ensureAuth();
+    const r = await fetchWithTimeout(`${FB_AUDIT_URL}?key=${FB_API_KEY}`, { mode:'cors', credentials:'omit', headers:{'Authorization':`Bearer ${fbIdToken}`} });
+    if (r.status === 404) return [];
+    if (!r.ok) return [];
+    const doc = await r.json();
+    const d = fromFsDoc(doc);
+    return (d && d.entries) ? d.entries : [];
+  } catch(e) { return []; }
+}
+
+async function fbWriteAudit(entries) {
+  await ensureAuth();
+  const r = await fetchWithTimeout(`${FB_AUDIT_URL}?key=${FB_API_KEY}`, {
+    method:'PATCH', mode:'cors', credentials:'omit',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${fbIdToken}`},
+    body: JSON.stringify(toFsDoc({ entries }))
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+}
+
+function logAudit(action, target, detail, before, after) {
+  const entry = {
+    id:     Date.now() + '_' + Math.floor(Math.random()*9999),
+    ts:     Date.now(),
+    user:   getUserName(),
+    role:   currentUser?.role || 'unknown',
+    action: action.toLowerCase(),
+    target: target || '',
+    detail: detail || '',
+    before: before || null,
+    after:  after  || null,
+  };
+  auditLog.unshift(entry); // newest first
+  if (auditLog.length > MAX_AUDIT) auditLog = auditLog.slice(0, MAX_AUDIT);
+  // Debounce write to Firebase (2s)
+  if (auditWritePending) clearTimeout(auditWritePending);
+  auditWritePending = setTimeout(async () => {
+    auditWritePending = null;
+    try { await fbWriteAudit(auditLog); } catch(e) { console.warn('[AUDIT] write failed:', e.message); }
+  }, 2000);
+}
+
+async function loadAuditLog() {
+  try {
+    auditLog = await fbReadAudit();
+  } catch(e) { auditLog = []; }
+}
+
+async function loadAndRenderAudit() {
+  const tbody = document.getElementById('audit-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Loading…</td></tr>';
+  await loadAuditLog();
+  renderAuditLog();
+}
+
+function renderAuditLog() {
+  const tbody = document.getElementById('audit-tbody');
+  if (!tbody) return;
+  const search = (document.getElementById('audit-search')?.value||'').toLowerCase();
+  const filterUser = document.getElementById('audit-filter-user')?.value || '';
+  const filterAction = document.getElementById('audit-filter-action')?.value || '';
+
+  let entries = auditLog;
+  if (search)       entries = entries.filter(e => (e.user+e.action+e.target+e.detail).toLowerCase().includes(search));
+  if (filterUser)   entries = entries.filter(e => e.user === filterUser);
+  if (filterAction) entries = entries.filter(e => e.action === filterAction);
+
+  // Populate filter dropdowns
+  const userSel = document.getElementById('audit-filter-user');
+  const actSel  = document.getElementById('audit-filter-action');
+  if (userSel && userSel.options.length <= 1) {
+    const users = [...new Set(auditLog.map(e=>e.user))].sort();
+    users.forEach(u => { const o = document.createElement('option'); o.value=u; o.textContent=u; userSel.appendChild(o); });
+  }
+  if (actSel && actSel.options.length <= 1) {
+    const acts = [...new Set(auditLog.map(e=>e.action))].sort();
+    acts.forEach(a => { const o = document.createElement('option'); o.value=a; o.textContent=a.toUpperCase(); actSel.appendChild(o); });
+  }
+
+  document.getElementById('audit-count').textContent = `${entries.length} of ${auditLog.length} entries`;
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No entries found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = entries.map(e => {
+    const dt = new Date(e.ts);
+    const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    const actionCls = e.action.replace(/_/g,'_');
+    return `<tr>
+      <td style="white-space:nowrap;font-size:10px">${dateStr}</td>
+      <td><strong>${esc(e.user||'')}</strong>${e.role==='superadmin'?'<br><span style="font-size:9px;color:#e65100">ADMIN</span>':''}</td>
+      <td><span class="audit-action ${actionCls}">${(e.action||'').toUpperCase().replace(/_/g,' ')}</span></td>
+      <td>${esc(e.target||'')}</td>
+      <td style="max-width:220px;word-break:break-word">${esc(e.detail||'')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function adminExportAudit() {
+  const blob = new Blob([JSON.stringify(auditLog, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `lj-audit-log-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+// ── Admin Console helpers ─────────────────────────────────────
+function showAdminTab(name) {
+  document.querySelectorAll('.admin-sub-btn').forEach((b,i) => {
+    const tabs = ['overview','users','audit','history','data','firebase','system'];
+    b.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.admin-sub-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('asub-' + name);
+  if (panel) panel.classList.add('active');
+  if (name === 'overview') adminRefreshOverview();
+  if (name === 'users')    renderUsersTable();
+  if (name === 'audit')    loadAndRenderAudit();
+  if (name === 'history')  renderHistory();
+  if (name === 'firebase') adminRefreshFbInfo();
+  if (name === 'system')   adminRefreshSystem();
+}
+
+function adminRefreshOverview() {
+  const grid = document.getElementById('ov-grid');
+  if (!grid) return;
+  const s = getSession();
+  const totalTasks = zones.reduce((n,z) => n+(z.tasks||[]).length, 0);
+  grid.innerHTML = [
+    { label:'Total Zones', val: zones.length, sub: 'across all maps' },
+    { label:'Active Season', val: season, sub: '' },
+    { label:'Users', val: appUsers.filter(u=>u.active!==false).length, sub: `${appUsers.filter(u=>u.role==='superadmin').length} admins` },
+    { label:'Audit Entries', val: auditLog.length, sub: `max ${MAX_AUDIT}` },
+    { label:'Undo Stack', val: undoStack.length, sub: `max ${MAX_UNDO}` },
+    { label:'Schema Version', val: SCHEMA_VERSION, sub: '' },
+    { label:'Sync Status', val: document.getElementById('db-status')?.textContent||'—', sub: '' },
+    { label:'Session', val: s ? s.name : '—', sub: s ? `expires ${new Date(s.expires).toLocaleTimeString()}` : '' },
+  ].map(c => `<div class="ov-card"><div class="ov-label">${c.label}</div><div class="ov-val">${esc(String(c.val))}</div>${c.sub?`<div class="ov-sub">${esc(c.sub)}</div>`:''}</div>`).join('');
+}
+
+function adminRefreshFbInfo() {
+  const el = document.getElementById('admin-fb-info');
+  if (!el) return;
+  el.innerHTML = [
+    `Project: ${FB_PROJECT}`,
+    `App Data: ${FB_DOC_URL}`,
+    `Users: ${FB_USERS_URL}`,
+    `Audit: ${FB_AUDIT_URL}`,
+    `Auth Token: ${fbIdToken ? fbIdToken.slice(0,32)+'…' : 'not obtained'}`,
+    `Token Expiry: ${fbTokenExpiry ? new Date(fbTokenExpiry).toLocaleTimeString() : '—'}`,
+    `Offline Mode: ${offlineMode}`,
+  ].map(l => esc(l)).join('<br>');
+}
+
+function adminRefreshSystem() {
+  const el = document.getElementById('session-info');
+  if (!el) return;
+  const s = getSession();
+  el.innerHTML = s ? [
+    `User: ${s.name} (${s.role})`,
+    `Logged in: ${new Date(s.loginTime).toLocaleString()}`,
+    `Session expires: ${new Date(s.expires).toLocaleString()}`,
+    `Firebase anon auth: ${fbIdToken ? 'active' : 'none'}`,
+    `Local keys: ${Object.keys(localStorage).join(', ')}`,
+  ].map(l=>esc(l)).join('<br>') : 'No active session';
+}
+
+function adminExportAll() {
+  const data = { appData: {zones, season, nextId}, users: appUsers, auditLog, exportedAt: new Date().toISOString(), exportedBy: getUserName() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `lj-full-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1521,6 +2290,8 @@ const FB_API_KEY     = 'AIzaSyBkc_mBKCAOic04qISupExhyuolZ3HhudY';
 const FB_DOC_URL     = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/farms/main`;
 const FB_AUTH_URL    = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_API_KEY}`;
 const FB_REFRESH_URL = `https://securetoken.googleapis.com/v1/token?key=${FB_API_KEY}`;
+const FB_USERS_URL   = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/config/users`;
+const FB_AUDIT_URL   = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/audit/log`;
 
 let savePending  = null;
 let connectTimer = null;
@@ -1629,21 +2400,56 @@ async function fbWrite(data) {
 }
 
 // ── Launch sequence ───────────────────────────────────────────────────────────
-function initFirebase() {
+async function initFirebase() {
   loadLocal();
   renderAll();
-  unlockApp();
-  promptUserName(() => updateUserBadge()); // prompt for name if not yet set; update header badge
-  updateUserBadge();
-  // Detect Claude sandbox (about: protocol = iframe sandbox, fetch blocked)
-  // Note: blob: is NOT treated as sandbox — Gmail/Edge open attachments as blob: URLs
+
   const inSandbox = location.protocol === 'about:';
   if (inSandbox) {
+    // Sandbox: skip cloud, restore session if valid
+    const session = getSession();
+    if (session) {
+      currentUser = { id: session.id, name: session.name, role: session.role };
+    } else {
+      appUsers = DEFAULT_USERS.map(u => ({...u}));
+      showLoginOverlay(() => { unlockApp(); updateUserBadge(); applyRoleVisibility(); });
+      return;
+    }
+    unlockApp();
+    updateUserBadge();
+    applyRoleVisibility();
     setDbStatus('sandbox');
-    return; // localStorage only — no cloud sync in sandbox
+    return;
   }
+
   setDbStatus('connecting');
-  doConnect(readCrashFile());
+
+  // Check for existing valid session
+  const session = getSession();
+  if (session) {
+    currentUser = { id: session.id, name: session.name, role: session.role };
+    updateUserBadge();
+    applyRoleVisibility();
+    // Load users and audit in background
+    try { await initUsers(); } catch(e) {}
+    try { await loadAuditLog(); } catch(e) {}
+    unlockApp();
+    doConnect(readCrashFile());
+  } else {
+    // Need to authenticate first — connect to Firebase for users, then show login
+    try {
+      await initUsers();
+    } catch(e) {
+      appUsers = DEFAULT_USERS.map(u => ({...u}));
+    }
+    showLoginOverlay(async () => {
+      unlockApp();
+      updateUserBadge();
+      applyRoleVisibility();
+      try { await loadAuditLog(); } catch(e) {}
+      doConnect(readCrashFile());
+    });
+  }
 }
 
 async function doConnect(pendingCrash, attempt = 1) {
@@ -1752,6 +2558,7 @@ function buildPayload() {
 // RESET FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 function resetToDefaults() {
+  logAudit('factory_reset', 'All data', `Factory reset by ${getUserName()}`);
   zones = DEFAULT_ZONES.map(z=>({...z})); nextId=100; season='Spring';
   undoStack=[]; updateUndoBtn();
   resetting=true;
@@ -1763,7 +2570,8 @@ function resetToDefaults() {
 }
 
 function resetMapsOnly() {
-  pushUndo();
+  pushUndo('Reset map positions');
+  logAudit('map_reset', 'All zones', 'Map positions reset to defaults');
   const defByName={};
   DEFAULT_ZONES.forEach(z=>{defByName[z.name]={mapSide:z.mapSide,mapPos:z.mapPos,mapId:z.mapId,zoneW:null,zoneH:null};});
   zones=zones.map(z=>{const def=defByName[z.name];return def?{...z,...def}:{...z,mapSide:null,mapPos:null,zoneW:null,zoneH:null};});
@@ -1784,20 +2592,65 @@ function newId() {
 
 // ── Undo stack ────────────────────────────────────────────────────────────────
 let undoStack = [];
-const MAX_UNDO = 20;
+const MAX_UNDO = 50;
 
-function pushUndo() {
-  undoStack.push(JSON.parse(JSON.stringify(zones)));
+function pushUndo(description) {
+  undoStack.push({
+    zones: JSON.parse(JSON.stringify(zones)),
+    season,
+    ts:   Date.now(),
+    user: getUserName(),
+    desc: description || 'Change',
+  });
   if (undoStack.length > MAX_UNDO) undoStack.shift();
   updateUndoBtn();
 }
 
 function undo() {
   if (!undoStack.length) return;
-  zones = undoStack.pop();
+  const entry = undoStack.pop();
+  zones = entry.zones;
+  if (entry.season) season = entry.season;
   updateUndoBtn();
+  logAudit('undo', entry.desc, `Undid: ${entry.desc} (by ${entry.user})`);
   save();
   renderAll();
+}
+
+function restoreUndoAt(index) {
+  if (index < 0 || index >= undoStack.length) return;
+  const entry = undoStack[index];
+  // Remove all entries from index onward
+  undoStack = undoStack.slice(0, index);
+  zones = entry.zones;
+  if (entry.season) season = entry.season;
+  updateUndoBtn();
+  logAudit('undo', entry.desc, `Restored to: ${entry.desc} (by ${entry.user})`);
+  save();
+  renderAll();
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (!el) return;
+  if (!undoStack.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">No undo history in this session</div>';
+    return;
+  }
+  // Show newest first
+  el.innerHTML = [...undoStack].reverse().map((entry, i) => {
+    const realIdx = undoStack.length - 1 - i;
+    const dt = new Date(entry.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    return `<div class="history-entry">
+      <div class="h-num">${undoStack.length - i}</div>
+      <div class="h-body">
+        <div class="h-desc">${esc(entry.desc)}</div>
+        <div class="h-meta">${esc(entry.user)} · ${dt} · ${(entry.zones||[]).length} zones</div>
+      </div>
+      <button class="h-restore" onclick="restoreUndoAt(${realIdx})">↩ Restore</button>
+    </div>`;
+  }).join('');
 }
 
 function updateUndoBtn() {
@@ -2678,7 +3531,7 @@ function renderActiveSvg(zoneList, mapId) {
       }
 
       // ── Apply and save ────────────────────────────────────────────────────
-      pushUndo();
+      pushUndo('Move zone on map: ' + (zone?.name||''));
       zone.mapSide    = finalSide;
       zone.mapPos     = finalPos;
       zone._autoPlaced = false;
@@ -2738,7 +3591,7 @@ function renderActiveSvg(zoneList, mapId) {
       if(!Number.isFinite(nw)||!Number.isFinite(nh)) return;
       const zone=zones.find(zn=>zn.id===z.id);
       if(zone){
-        pushUndo();
+        pushUndo('Resize zone: ' + (zone.name||''));
         zone.zoneW=nw; zone.zoneH=nh;
         // Flush any pending debounce so this save goes immediately
         if(savePending){ clearTimeout(savePending); savePending=null; }
@@ -2936,9 +3789,10 @@ function duplicateZone() {
   if (!editingId) return;
   const src = zones.find(z => z.id === editingId);
   if (!src) return;
-  pushUndo();
+  pushUndo('Duplicate zone: ' + src.name);
   const copy = { ...src, id: newId(), name: src.name + ' (copy)', mapPos: null, mapSide: null };
   zones.push(copy);
+  logAudit('zone_dup', src.name, `Duplicated as "${copy.name}"`);
   save(); closeModal(); renderAll();
 }
 
@@ -2975,12 +3829,15 @@ function saveModal() {
   if(!validTime(end))   { errEl.textContent='End time must be HH:MM (00:00–23:59).'; errEl.style.display='block'; return; }
 
   if(editingId) {
-    pushUndo();
     const z = zones.find(z=>z.id===editingId);
+    const before = z ? {name:z.name,dur:z.dur,freq:z.freq,start:z.start,end:z.end} : null;
+    pushUndo('Edit zone: ' + (z ? z.name : name));
     if(z) { z.name=name;z.group=group;z.dur=dur;z.freq=freq;z.days=days;z.start=start;z.end=end||calcEnd(start,dur);z.notes=notes;z.gph=gph;z.mapId=mapId;z.mapSide=mapSide;z.mapPos=mapPos; }
+    logAudit('zone_edit', name, `dur:${before?.dur}→${dur}, start:${before?.start}→${start}`, before, {name,dur,freq,start,end});
   } else {
-    pushUndo();
+    pushUndo('Add zone: ' + name);
     zones.push({id:newId(),name,group,dur,freq,days,start,end:end||calcEnd(start,dur),notes,gph,mapId,mapSide,mapPos,ztype:'outdoor'});
+    logAudit('zone_add', name, `New zone: ${freq}, ${dur}min, starts ${start}`);
   }
   save(); closeModal(); renderAll();
 }
@@ -2992,7 +3849,9 @@ function deleteZone() {
     title: 'Delete Zone', msg: 'Delete this zone? This cannot be undone.',
     okText: 'Delete', cancelText: 'Cancel',
     onOk: () => {
-      pushUndo();
+      const z = zones.find(x=>x.id===idToDelete);
+      pushUndo('Delete zone: ' + (z?.name||'Unknown'));
+      logAudit('zone_delete', z?.name||'Unknown', `Zone deleted`);
       zones = zones.filter(z => z.id !== idToDelete);
       if (selectedMap === idToDelete) selectedMap = null;
       save(); closeModal(); renderAll();
@@ -3111,7 +3970,8 @@ function importData(e) {
       const d = JSON.parse(ev.target.result);
       if(!d.zones) { alert('Invalid file – no zones found.'); return; }
       showInlineDialog({title:'Import Data',msg:`Import ${d.zones.length} zones? This will replace all current data.`,okText:'Import',cancelText:'Cancel',onOk:()=>{
-        pushUndo();
+        pushUndo('Import data');
+        logAudit('import', 'All data', `Imported ${d.zones.length} zones from file`);
         zones=d.zones; season=d.season||'Spring'; nextId=d.nextId||100;
         save(); renderAll();
       }});
@@ -3136,9 +3996,11 @@ function showTab(name) {
 }
 
 function setSeason(btn, s) {
+  const prev = season;
   season=s;
   document.querySelectorAll('#tab-schedule .seg-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  if (prev !== s) logAudit('season_change', 'Season', `${prev} → ${s}`);
   save(); renderSchedule();
 }
 
@@ -3223,7 +4085,8 @@ function devShowSchema() {
 
 // ── Bulk zone ops ─────────────────────────────────────────────
 function devClearAllMapPositions() {
-  pushUndo();
+  pushUndo('Clear all map positions');
+  logAudit('bulk_edit', 'All zones', 'All map positions cleared');
   zones.forEach(z => { z.mapSide=null; z.mapPos=null; z.zoneW=null; z.zoneH=null; });
   save(); renderAll();
   devStatus('dev-zone-status','All map positions cleared');
@@ -3277,7 +4140,8 @@ function devApplyEditor() {
   try {
     const parsed = JSON.parse(document.getElementById('dev-json-editor').value);
     if (!Array.isArray(parsed)) throw new Error('Must be an array');
-    pushUndo();
+    pushUndo('JSON editor apply');
+    logAudit('bulk_edit', 'All zones', `Applied ${parsed.length} zones via JSON editor`);
     zones = parsed;
     save(); renderAll();
     devStatus('dev-editor-status','Applied ' + parsed.length + ' zones from editor');
@@ -3307,7 +4171,7 @@ function devToggleOffline() {
   setDbStatus(offlineMode ? 'offline' : 'connecting');
   if (!offlineMode) { connecting = false; doConnect(readCrashFile()); }
 }
-function devClearUndo()   { undoStack=[]; updateUndoBtn(); devStatus('dev-state-pre','Undo stack cleared'); }
+function devClearUndo()   { undoStack=[]; updateUndoBtn(); renderHistory(); devStatus('dev-state-pre','Undo stack cleared'); }
 
 function scrollToSection(id) {
   const el = document.getElementById(id);
