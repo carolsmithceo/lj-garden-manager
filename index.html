@@ -1069,7 +1069,7 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   </div>
 </div>
 
-<div id="app-content" style="pointer-events:auto;opacity:1;transition:opacity 0.3s;position:relative;">
+<div id="app-content" style="pointer-events:none;opacity:0;transition:opacity 0.3s;position:relative;">
 <div class="tab-nav">
   <button class="tab-btn active" onclick="showTab('schedule')">SCHEDULE</button>
   <button class="tab-btn" onclick="showTab('map')">MAPS</button>
@@ -1981,10 +1981,15 @@ function adminLogout() {
   logAudit('logout', name, `${name} signed out`);
   clearSession();
   currentUser = null;
-  // Rebuild login screen and show
+  updateUserBadge();
+  applyRoleVisibility();
+  // Lock app content, show login
+  const content = document.getElementById('app-content');
+  if (content) { content.style.opacity = '0'; content.style.pointerEvents = 'none'; }
   showLoginOverlay(() => {
-    // After login, re-init app
-    initFirebase();
+    unlockApp();
+    updateUserBadge();
+    applyRoleVisibility();
   });
 }
 
@@ -2447,18 +2452,19 @@ async function initFirebase() {
     currentUser = { id: session.id, name: session.name, role: session.role };
     updateUserBadge();
     applyRoleVisibility();
-    // Load users and audit in background
     try { await initUsers(); } catch(e) {}
     try { await loadAuditLog(); } catch(e) {}
     unlockApp();
     doConnect(readCrashFile());
   } else {
-    // Need to authenticate first — connect to Firebase for users, then show login
-    try {
-      await initUsers();
-    } catch(e) {
-      appUsers = DEFAULT_USERS.map(u => ({...u}));
-    }
+    // Show login immediately with a loading spinner, then load users from Firebase
+    // Use DEFAULT_USERS as fallback so login screen is never empty
+    const adminHash = await sha256('admin');
+    appUsers = DEFAULT_USERS.map(u => ({
+      ...u,
+      pwHash: (u.role === 'superadmin') ? adminHash : '',
+      createdAt: Date.now(), lastLogin: null,
+    }));
     showLoginOverlay(async () => {
       unlockApp();
       updateUserBadge();
@@ -2466,6 +2472,11 @@ async function initFirebase() {
       try { await loadAuditLog(); } catch(e) {}
       doConnect(readCrashFile());
     });
+    // Load real users from Firebase in background — updates login grid if still visible
+    try {
+      await initUsers();
+      buildLoginUserGrid(); // refresh grid with real data (e.g. Keith added)
+    } catch(e) {}
   }
 }
 
@@ -3051,19 +3062,15 @@ function showConnectBtn(msg) {
 }
 
 function unlockApp() {
-  // Save name from connect overlay input if filled
-  const ni = document.getElementById('connect-name-input');
-  if (ni && ni.value.trim()) localStorage.setItem('lovejoy_user', ni.value.trim());
   const overlay = document.getElementById('connect-overlay');
   if (overlay) overlay.classList.add('hidden');
   const content = document.getElementById('app-content');
   if (content) {
-    content.style.pointerEvents = '';
+    content.style.pointerEvents = 'auto';
     content.style.opacity = '1';
     content.style.userSelect = '';
     content.style.position = '';
   }
-  // reconnect-btn visibility is managed exclusively by setDbStatus()
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -4621,11 +4628,11 @@ function switchGeoBaseLayer(name) {
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded', async ()=>{
   generateAppIcon();
   populateSelects();
   renderGroupFilters();
-  initFirebase();   // handles loadLocal + renderAll internally
+  await initFirebase();   // handles loadLocal + renderAll internally
   // Sync season buttons to loaded state
   document.querySelectorAll('#tab-schedule .seg-btn').forEach(b=>{
     b.classList.toggle('active', b.textContent===season);
