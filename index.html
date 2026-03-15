@@ -1647,6 +1647,21 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
         <span class="form-hint">Slot along that wall — or drag the zone directly on the map</span>
       </div>
       <div class="form-group">
+        <label>WIDTH (ft)</label>
+        <input type="number" id="f-zone-width" min="0.5" max="500" step="0.5" placeholder="Auto">
+        <span class="form-hint">Zone width — controls box size on map</span>
+      </div>
+      <div class="form-group">
+        <label>LENGTH (ft)</label>
+        <input type="number" id="f-zone-length" min="0.5" max="500" step="0.5" placeholder="Auto">
+        <span class="form-hint">Zone length — controls box size on map</span>
+      </div>
+      <div class="form-group">
+        <label>DEPTH (in)</label>
+        <input type="number" id="f-zone-depth" min="0.5" max="60" step="0.5" placeholder="e.g. 12">
+        <span class="form-hint">Soil / bed depth in inches</span>
+      </div>
+      <div class="form-group">
         <label>DURATION (MIN)</label>
         <select id="f-duration" onchange="autoEndTime()"></select>
       </div>
@@ -3647,6 +3662,24 @@ function renderActiveSvg(zoneList, mapId) {
     fill:'rgba(90,158,95,0.15)',stroke:'#5a9e5f','stroke-width':2,
     'stroke-dasharray':'6 3',opacity:0,pointerEvents:'none'});
 
+  // ── Single document-level move/up handlers (avoids N listeners for N zones) ─
+  let _dragMove = null, _dragEnd = null, _resizeMove = null, _resizeEnd = null;
+  if (svg._cleanupDocHandlers) { svg._cleanupDocHandlers(); svg._cleanupDocHandlers = null; }
+  const _onDocMove  = e => { if(_dragMove) _dragMove(e.clientX,e.clientY); if(_resizeMove) _resizeMove(e.clientX,e.clientY); };
+  const _onDocUp    = e => { if(_dragEnd) _dragEnd(e.clientX,e.clientY); if(_resizeEnd) _resizeEnd(e.clientX,e.clientY); };
+  const _onDocTMove = e => { if(!_dragMove&&!_resizeMove)return; e.preventDefault(); const t=e.touches[0]; if(_dragMove)_dragMove(t.clientX,t.clientY); if(_resizeMove)_resizeMove(t.clientX,t.clientY); };
+  const _onDocTEnd  = e => { if(!_dragEnd&&!_resizeEnd)return; e.preventDefault(); const t=e.changedTouches[0]; if(_dragEnd)_dragEnd(t.clientX,t.clientY); if(_resizeEnd)_resizeEnd(t.clientX,t.clientY); };
+  document.addEventListener('mousemove', _onDocMove);
+  document.addEventListener('mouseup',   _onDocUp);
+  document.addEventListener('touchmove', _onDocTMove, {passive:false});
+  document.addEventListener('touchend',  _onDocTEnd,  {passive:false});
+  svg._cleanupDocHandlers = () => {
+    document.removeEventListener('mousemove', _onDocMove);
+    document.removeEventListener('mouseup',   _onDocUp);
+    document.removeEventListener('touchmove', _onDocTMove);
+    document.removeEventListener('touchend',  _onDocTEnd);
+  };
+
   // ── Draw each zone ────────────────────────────────────────────────────────
   zoneList.forEach(z => {
     const erz  = !!(errs[z.id] && Object.keys(errs[z.id]).length);
@@ -3667,23 +3700,56 @@ function renderActiveSvg(zoneList, mapId) {
     const fill     = isSel ? colPair.base : colPair.light;
 
     const g = el('g',{cursor:'grab'});
-    const rect = el('rect',{x,y,width:BW,height:bh,rx:4,fill,stroke:colPair.base,
+    const rect = el('rect',{x,y,width:bw,height:bh,rx:4,fill,stroke:colPair.base,
       'stroke-width':isSel?2.5:1.5,
       'stroke-dasharray': z._autoPlaced?'4 2':'none',
       style:'transition:filter 0.1s'},g);
 
-    const dispName = z.name.length>12 ? z.name.slice(0,11)+'…' : z.name;
+    // Word-wrap zone name into multi-line SVG tspan elements
     const lc = isSel?'#fff':colPair.base;
-    const nameEl = tx(dispName,{x:x+BW/2,y:y+bh/2-5,'text-anchor':'middle',
-      'font-size':9,'font-weight':700,'font-family':"'Courier New',monospace",'pointer-events':'none',fill:lc},g);
-    const timeEl = tx(z.start,{x:x+BW/2,y:y+bh/2+8,'text-anchor':'middle',
+    (function drawWrappedName() {
+      const MAX_CHARS = Math.max(7, Math.floor(bw / 5.8)); // ~5.8px per char at font-size 9
+      const MAX_LINES = 4;
+      const words = z.name.split(' ');
+      const lines = [];
+      let cur = '';
+      for (const w of words) {
+        const test = cur ? cur + ' ' + w : w;
+        if (test.length <= MAX_CHARS) { cur = test; }
+        else {
+          if (cur) lines.push(cur);
+          // Long single word: hard-split
+          if (w.length > MAX_CHARS) {
+            for (let i=0;i<w.length;i+=MAX_CHARS) lines.push(w.slice(i,i+MAX_CHARS));
+            cur = '';
+          } else { cur = w; }
+        }
+      }
+      if (cur) lines.push(cur);
+      const wrapped = lines.slice(0, MAX_LINES);
+      const LINE_H = 11;
+      const hasTime = !!z.start;
+      const blockH  = wrapped.length * LINE_H;
+      // Centre name block; shift up slightly if time label follows
+      const topY = y + bh/2 - blockH/2 + LINE_H/2 - (hasTime ? 5 : 0);
+      const nameG = el('text',{x:x+bw/2,y:topY,'text-anchor':'middle',
+        'font-size':9,'font-weight':700,'font-family':"'Courier New',monospace",'pointer-events':'none',fill:lc},g);
+      wrapped.forEach((line, i) => {
+        const ts = document.createElementNS(ns,'tspan');
+        ts.textContent = line;
+        ts.setAttribute('x', x+bw/2);
+        ts.setAttribute('dy', i===0 ? '0' : String(LINE_H));
+        nameG.appendChild(ts);
+      });
+    })();
+    const timeEl = tx(z.start,{x:x+bw/2,y:y+bh/2+bh*0.22,'text-anchor':'middle',
       'font-size':7.5,'font-family':'monospace','pointer-events':'none',
       fill:isSel?'rgba(255,255,255,0.75)':'#666'},g);
 
     if (z.group) {
-      el('rect',{x:x+BW-17,y:y+4,width:13,height:13,rx:6.5,
+      el('rect',{x:x+bw-17,y:y+4,width:13,height:13,rx:6.5,
         fill:colPair.base,stroke:'#fff','stroke-width':1,'pointer-events':'none'},g);
-      tx(z.group.split(',')[0],{x:x+BW-10.5,y:y+13.5,'text-anchor':'middle',
+      tx(z.group.split(',')[0],{x:x+bw-10.5,y:y+13.5,'text-anchor':'middle',
         'font-size':7.5,'font-weight':800,'font-family':'monospace','pointer-events':'none',fill:'#fff'},g);
     }
     if (z._autoPlaced) tx('auto',{x:x+4,y:y+bh-5,'font-size':6,'pointer-events':'none',fill:'rgba(0,0,0,0.3)','font-family':'monospace'},g);
@@ -3701,6 +3767,7 @@ function renderActiveSvg(zoneList, mapId) {
       startPt  = pt;
       dragOffX = pt.x - x;
       dragOffY = pt.y - y;
+      _dragMove = moveDrag; _dragEnd = endDrag;
       g.setAttribute('cursor','grabbing');
       rect.setAttribute('opacity','0.85');
       rect.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.25))';
@@ -3727,6 +3794,7 @@ function renderActiveSvg(zoneList, mapId) {
     function endDrag(cx, cy) {
       if (!dragging) return;
       dragging = false;
+      _dragMove = null; _dragEnd = null;
       g.setAttribute('cursor','grab');
       rect.setAttribute('opacity','1');
       rect.style.filter = '';
@@ -3793,35 +3861,28 @@ function renderActiveSvg(zoneList, mapId) {
       renderMapPanel();
     }
 
-    // Mouse events
+    // Drag: only need mousedown/touchstart per zone — move/up handled by doc-level
     g.addEventListener('mousedown', e => { e.preventDefault(); startDrag(e.clientX,e.clientY); });
-    svg.addEventListener('mousemove', e => { if(dragging) moveDrag(e.clientX,e.clientY); });
-    svg.addEventListener('mouseup',   e => { if(dragging) endDrag(e.clientX,e.clientY); });
-    svg.addEventListener('mouseleave',e => { if(dragging) endDrag(e.clientX,e.clientY); });
-
-    // Touch events (iPad)
     g.addEventListener('touchstart', e => { e.preventDefault(); const t=e.touches[0]; startDrag(t.clientX,t.clientY); }, {passive:false});
-    svg.addEventListener('touchmove', e => { if(!dragging)return; e.preventDefault(); const t=e.touches[0]; moveDrag(t.clientX,t.clientY); }, {passive:false});
-    svg.addEventListener('touchend',  e => { if(!dragging)return; e.preventDefault(); const t=e.changedTouches[0]; endDrag(t.clientX,t.clientY); }, {passive:false});
 
-
-    // ── RESIZE HANDLE (bottom-right corner, drag to resize) ────────────────
-    const RH = 10;
-    const handle = el('rect',{x:x+bw-RH,y:y+bh-RH,width:RH,height:RH,rx:2,
-      fill:colPair.base,opacity:0.6,cursor:'se-resize'},g);
-    el('text',{x:x+bw-3,y:y+bh-2,'font-size':7,fill:'#fff','pointer-events':'none',
-      'text-anchor':'end','font-family':'monospace'},g).textContent='⇡';
+    // ── RESIZE HANDLE (bottom-right corner, 24×24 for easy touch target) ────
+    const RH = 24;
+    const handle = el('rect',{x:x+bw-RH,y:y+bh-RH,width:RH,height:RH,rx:4,
+      fill:colPair.base,opacity:0.55,cursor:'se-resize'},g);
+    el('text',{x:x+bw-RH/2,y:y+bh-RH/2+4,'font-size':9,fill:'#fff','pointer-events':'none',
+      'text-anchor':'middle','font-family':'monospace'},g).textContent='↘';
 
     let resizing=false, rsStart=null, rsOrigW=bw, rsOrigH=bh;
     function startResize(cx,cy){
       resizing=true; rsStart=svgPt(cx,cy); rsOrigW=bw; rsOrigH=bh;
-      handle.setAttribute('opacity','1');
-      dragging=false; // prevent drag handlers from also firing
+      _resizeMove = moveResize; _resizeEnd = endResize;
+      handle.setAttribute('opacity','0.85');
+      _dragMove = null; _dragEnd = null; dragging=false; // prevent drag from firing
     }
     function moveResize(cx,cy){
       if(!resizing || !rsStart)return;
       const pt=svgPt(cx,cy);
-      const nw=Math.max(50,Math.round(rsOrigW+(pt.x-rsStart.x)));
+      const nw=Math.max(40,Math.round(rsOrigW+(pt.x-rsStart.x)));
       const nh=Math.max(30,Math.round(rsOrigH+(pt.y-rsStart.y)));
       rect.setAttribute('width',nw); rect.setAttribute('height',nh);
       handle.setAttribute('x',x+nw-RH); handle.setAttribute('y',y+nh-RH);
@@ -3829,20 +3890,19 @@ function renderActiveSvg(zoneList, mapId) {
     function endResize(cx,cy){
       if(!resizing || !rsStart) return;
       resizing=false;
-      handle.setAttribute('opacity','0.6');
+      _resizeMove = null; _resizeEnd = null;
+      handle.setAttribute('opacity','0.55');
       const pt=svgPt(cx,cy);
       const dx=pt.x - rsStart.x;
       const dy=pt.y - rsStart.y;
       rsStart=null;
-      const nw=Math.max(50,Math.round(rsOrigW+dx));
+      const nw=Math.max(40,Math.round(rsOrigW+dx));
       const nh=Math.max(30,Math.round(rsOrigH+dy));
-      // Only save valid finite dimensions
       if(!Number.isFinite(nw)||!Number.isFinite(nh)) return;
       const zone=zones.find(zn=>zn.id===z.id);
       if(zone){
         pushUndo('Resize zone: ' + (zone.name||''));
         zone.zoneW=nw; zone.zoneH=nh;
-        // Flush any pending debounce so this save goes immediately
         if(savePending){ clearTimeout(savePending); savePending=null; }
         save();
         const mz=zones.filter(zn=>(zn.mapId||'outdoor')===activeMapId);
@@ -3850,11 +3910,7 @@ function renderActiveSvg(zoneList, mapId) {
       }
     }
     handle.addEventListener('mousedown',e=>{e.stopPropagation();e.preventDefault();startResize(e.clientX,e.clientY);});
-    svg.addEventListener('mousemove',e=>{if(resizing)moveResize(e.clientX,e.clientY);});
-    svg.addEventListener('mouseup',  e=>{if(resizing)endResize(e.clientX,e.clientY);});
     handle.addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();const t=e.touches[0];startResize(t.clientX,t.clientY);},{passive:false});
-    svg.addEventListener('touchmove',e=>{if(resizing){e.preventDefault();const t=e.touches[0];moveResize(t.clientX,t.clientY);}},{passive:false});
-    svg.addEventListener('touchend', e=>{if(resizing){e.preventDefault();const t=e.changedTouches[0];endResize(t.clientX,t.clientY);}},{passive:false});
 
     // Click (no drag) — select zone
     g.addEventListener('click', e => {
@@ -3865,6 +3921,8 @@ function renderActiveSvg(zoneList, mapId) {
         renderActiveSvg(autoPosition(mapZ).filter(zn=>mapFilter==='ALL'||groupLetters(zn.group).includes(mapFilter)), mapId);
       }
     });
+    // Double-click — open Edit Zone modal directly
+    g.addEventListener('dblclick', e => { e.stopPropagation(); openModal(z.id); });
   });
 }
 
@@ -4010,6 +4068,9 @@ function openModal(id) {
   document.getElementById('f-mapside').value = z.mapSide||'';
   const mpos = document.getElementById('f-mappos');
   mpos.value = z.mapPos!=null ? String(z.mapPos) : '';
+  document.getElementById('f-zone-width').value  = z.widthFt  != null ? z.widthFt  : '';
+  document.getElementById('f-zone-length').value = z.lengthFt != null ? z.lengthFt : '';
+  document.getElementById('f-zone-depth').value  = z.depthIn  != null ? z.depthIn  : '';
   document.getElementById('f-notes').value = z.notes||'';
   document.getElementById('modal-delete-btn').style.display = '';
   document.getElementById('modal-dupe-btn').style.display = '';
@@ -4067,6 +4128,12 @@ function saveModal() {
   const mapSide = document.getElementById('f-mapside').value||null;
   const mapPosRaw = document.getElementById('f-mappos').value;
   const mapPos = mapPosRaw !== '' ? parseInt(mapPosRaw) : null;
+  const widthFt  = document.getElementById('f-zone-width').value  !== '' ? parseFloat(document.getElementById('f-zone-width').value)  : null;
+  const lengthFt = document.getElementById('f-zone-length').value !== '' ? parseFloat(document.getElementById('f-zone-length').value) : null;
+  const depthIn  = document.getElementById('f-zone-depth').value  !== '' ? parseFloat(document.getElementById('f-zone-depth').value)  : null;
+  const FTPX = 7; // SVG pixels per foot — 7px/ft maps ~10ft→70px (default width)
+  const zoneWFromFt = widthFt  != null ? Math.max(40, Math.round(widthFt  * FTPX)) : null;
+  const zoneHFromFt = lengthFt != null ? Math.max(30, Math.round(lengthFt * FTPX)) : null;
   const errEl = document.getElementById('modal-err');
 
   if(!name) { errEl.textContent='Zone name is required.'; errEl.style.display='block'; return; }
@@ -4083,11 +4150,11 @@ function saveModal() {
     const z = zones.find(z=>z.id===editingId);
     const before = z ? {name:z.name,dur:z.dur,freq:z.freq,start:z.start,end:z.end} : null;
     pushUndo('Edit zone: ' + (z ? z.name : name));
-    if(z) { z.name=name;z.group=group;z.dur=dur;z.freq=freq;z.days=days;z.start=start;z.end=end||calcEnd(start,dur);z.notes=notes;z.gph=gph;z.mapId=mapId;z.mapSide=mapSide;z.mapPos=mapPos; }
+    if(z) { z.name=name;z.group=group;z.dur=dur;z.freq=freq;z.days=days;z.start=start;z.end=end||calcEnd(start,dur);z.notes=notes;z.gph=gph;z.mapId=mapId;z.mapSide=mapSide;z.mapPos=mapPos;z.widthFt=widthFt;z.lengthFt=lengthFt;z.depthIn=depthIn;if(zoneWFromFt!=null)z.zoneW=zoneWFromFt;if(zoneHFromFt!=null)z.zoneH=zoneHFromFt; }
     logAudit('zone_edit', name, `dur:${before?.dur}→${dur}, start:${before?.start}→${start}`, before, {name,dur,freq,start,end});
   } else {
     pushUndo('Add zone: ' + name);
-    zones.push({id:newId(),name,group,dur,freq,days,start,end:end||calcEnd(start,dur),notes,gph,mapId,mapSide,mapPos,ztype:'outdoor'});
+    zones.push({id:newId(),name,group,dur,freq,days,start,end:end||calcEnd(start,dur),notes,gph,mapId,mapSide,mapPos,widthFt,lengthFt,depthIn,zoneW:zoneWFromFt,zoneH:zoneHFromFt,ztype:'outdoor'});
     logAudit('zone_add', name, `New zone: ${freq}, ${dur}min, starts ${start}`);
   }
   save(); closeModal(); renderAll();
