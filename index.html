@@ -1519,7 +1519,8 @@ const CRASH_KEY      = 'lovejoy_crash';
 const FB_PROJECT     = 'lovejoy-farms';
 const FB_API_KEY     = 'AIzaSyBkc_mBKCAOic04qISupExhyuolZ3HhudY';
 const FB_DOC_URL     = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/farms/main`;
-const APP_SECRET     = 'ljf-2024-grass-valley-9x';
+const FB_AUTH_URL    = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_API_KEY}`;
+const FB_REFRESH_URL = `https://securetoken.googleapis.com/v1/token?key=${FB_API_KEY}`;
 
 let savePending  = null;
 let connectTimer = null;
@@ -1528,6 +1529,39 @@ let offlineMode  = false;
 let resetting    = false;
 let pollInterval = null;
 let connecting   = false;  // guard against concurrent doConnect calls
+
+// ── Anonymous Auth ────────────────────────────────────────────────────────────
+let fbIdToken      = null;
+let fbRefreshToken = null;
+let fbTokenExpiry  = 0;
+
+async function ensureAuth() {
+  const now = Date.now();
+  if (fbIdToken && now < fbTokenExpiry - 60000) return; // still valid
+  if (fbRefreshToken) {
+    try {
+      const r = await fetch(FB_REFRESH_URL, {
+        method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(fbRefreshToken)}`
+      });
+      if (r.ok) {
+        const d = await r.json();
+        fbIdToken = d.id_token; fbRefreshToken = d.refresh_token;
+        fbTokenExpiry = now + Number(d.expires_in) * 1000;
+        return;
+      }
+    } catch(e) { /* fall through to fresh sign-in */ }
+  }
+  // fresh anonymous sign-in
+  const r = await fetch(FB_AUTH_URL, {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({returnSecureToken: true})
+  });
+  if (!r.ok) throw new Error(`Auth failed: HTTP ${r.status}`);
+  const d = await r.json();
+  fbIdToken = d.idToken; fbRefreshToken = d.refreshToken;
+  fbTokenExpiry = now + Number(d.expiresIn) * 1000;
+}
 
 // ── Firestore value encoders/decoders ────────────────────────────────────────
 function toFsValue(v) {
@@ -1581,12 +1615,13 @@ async function fbRead() {
 
 // ── Write to Firestore (PATCH = upsert) ───────────────────────────────────────
 async function fbWrite(data) {
+  await ensureAuth();
   const body = JSON.stringify(toFsDoc(data));
   const r = await fetchWithTimeout(`${FB_DOC_URL}?key=${FB_API_KEY}`, {
     method: 'PATCH',
     mode: 'cors',
     credentials: 'omit',
-    headers: {'Content-Type': 'application/json'},
+    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${fbIdToken}`},
     body
   });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -1707,8 +1742,7 @@ function buildPayload() {
     zones, season, nextId,
     schemaVersion:  SCHEMA_VERSION,
     lastEditedBy:   getUserName(),
-    lastUpdatedMs:  Date.now(),
-    _token:         APP_SECRET
+    lastUpdatedMs:  Date.now()
   };
 }
 
@@ -1933,7 +1967,7 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('beforeunload', () => { if (savePending) { clearTimeout(savePending); if (!offlineMode) fbWrite(buildPayload()).then(()=>clearCrashFile()).catch(()=>{}); } });
 
 // ── DEV helpers ───────────────────────────────────────────────────────────────
-function devPushDefaults(){ fbWrite({zones:DEFAULT_ZONES.map(z=>({...z})),season:'Spring',nextId:100,schemaVersion:2,lastEditedBy:getUserName(),lastUpdatedMs:Date.now(),_token:APP_SECRET}).then(()=>devStatus('dev-fb-status','Defaults pushed')).catch(e=>devStatus('dev-fb-status','Failed: '+e.message,true)); }
+function devPushDefaults(){ fbWrite({zones:DEFAULT_ZONES.map(z=>({...z})),season:'Spring',nextId:100,schemaVersion:2,lastEditedBy:getUserName(),lastUpdatedMs:Date.now()}).then(()=>devStatus('dev-fb-status','Defaults pushed')).catch(e=>devStatus('dev-fb-status','Failed: '+e.message,true)); }
 
 
 function setDbStatus(state, editor) {
